@@ -1,5 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+using TMPro;
 
 public class PlacementSystem : MonoBehaviour
 {
@@ -9,19 +12,32 @@ public class PlacementSystem : MonoBehaviour
 
     [Header("Placement Settings")]
     public GameObject[] blockRoster;
-    public GameObject blockPrefab;
+    private GameObject blockPrefab;
     public float cellSize = 1f;
+
+    [Header("Global Stock System")]
+    public int currentGlobalStock = 15; // Stok total global
+    public Sprite[] blockSprites;      // Ikon untuk preview blok
+    
+    [Header("UI References")]
+    public Image nextBlockImage;       // Panel gambar di pojok kiri atas
+    public TextMeshProUGUI totalStockText; // Teks sisa stok di pojok kiri atas
 
     public Dictionary<Vector2Int, BlockData> gridData = new Dictionary<Vector2Int, BlockData>();
     
     private float currentRotation = 0f;
+    private int currentBlockIndex = 0; 
     private List<GameObject> activeIndicators = new List<GameObject>();
     private Transform indicatorContainer;
 
     private void Start()
     {
         indicatorContainer = new GameObject("IndicatorContainer").transform;
-        if (blockRoster.Length > 0) blockPrefab = blockRoster[0]; 
+        if (blockRoster.Length > 0) 
+        {
+            SelectBlock(0);
+        }
+        UpdatePreviewUI();
     }
 
     private void Update()
@@ -33,9 +49,19 @@ public class PlacementSystem : MonoBehaviour
 
     private void HandleBlockSelection()
     {
-        if (Input.GetKeyDown(KeyCode.Alpha1) && blockRoster.Length > 0) blockPrefab = blockRoster[0];
-        if (Input.GetKeyDown(KeyCode.Alpha2) && blockRoster.Length > 1) blockPrefab = blockRoster[1];
-        if (Input.GetKeyDown(KeyCode.Alpha3) && blockRoster.Length > 2) blockPrefab = blockRoster[2];
+        if (Input.GetKeyDown(KeyCode.Alpha1)) SelectBlock(0);
+        if (Input.GetKeyDown(KeyCode.Alpha2)) SelectBlock(1);
+        if (Input.GetKeyDown(KeyCode.Alpha3)) SelectBlock(2);
+    }
+
+    public void SelectBlock(int rosterIndex)
+    {
+        if (rosterIndex >= 0 && rosterIndex < blockRoster.Length)
+        {
+            currentBlockIndex = rosterIndex;
+            blockPrefab = blockRoster[rosterIndex];
+            UpdatePreviewUI();
+        }
     }
 
     private void HandleRotation()
@@ -48,6 +74,19 @@ public class PlacementSystem : MonoBehaviour
 
     private void DetectAndPlace()
     {
+        if (EventSystem.current.IsPointerOverGameObject())
+        {
+            ClearIndicators();
+            return;
+        }
+
+        // Cek stok global
+        if (currentGlobalStock <= 0)
+        {
+            ClearIndicators();
+            return;
+        }
+
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out RaycastHit hit, 100f, floorLayer))
         {
@@ -94,6 +133,42 @@ public class PlacementSystem : MonoBehaviour
         }
     }
 
+    private void PlaceBlock(Vector2Int baseGridPos, List<Vector2Int> rotatedTiles)
+    {
+        Vector3 spawnPos = new Vector3(baseGridPos.x * cellSize, 0.5f, baseGridPos.y * cellSize);
+        GameObject newBlock = Instantiate(blockPrefab, spawnPos, Quaternion.Euler(0, currentRotation, 0));
+        
+        BlockData data = newBlock.GetComponent<BlockData>();
+
+        foreach (Vector2Int localPos in rotatedTiles)
+        {
+            Vector2Int worldPos = baseGridPos + localPos;
+            gridData.Add(worldPos, data);
+        }
+
+        currentGlobalStock--;
+        UpdatePreviewUI();
+    }
+
+    private void UpdatePreviewUI()
+    {
+        if (totalStockText != null)
+        {
+            int displayStock = currentGlobalStock - 3;
+            
+            if (displayStock < 0) displayStock = 0;
+
+            totalStockText.text = displayStock.ToString();
+            
+            totalStockText.color = displayStock <= 0 ? Color.red : Color.white;
+        }
+
+        if (currentBlockIndex < blockSprites.Length && nextBlockImage != null)
+        {
+            nextBlockImage.sprite = blockSprites[currentBlockIndex];
+        }
+    }
+
     private void UpdateIndicators(Vector2Int baseGridPos, List<Vector2Int> rotatedTiles)
     {
         while (activeIndicators.Count < rotatedTiles.Count)
@@ -111,9 +186,7 @@ public class PlacementSystem : MonoBehaviour
         {
             Vector2Int tilePos = baseGridPos + rotatedTiles[i];
             Vector3 worldPos = new Vector3(tilePos.x * cellSize, 0.2f, tilePos.y * cellSize);
-            
             activeIndicators[i].transform.position = worldPos;
-            activeIndicators[i].transform.rotation = Quaternion.identity; 
         }
     }
 
@@ -122,22 +195,6 @@ public class PlacementSystem : MonoBehaviour
         foreach (GameObject indicator in activeIndicators)
         {
             indicator.SetActive(false);
-        }
-    }
-
-    private void PlaceBlock(Vector2Int baseGridPos, List<Vector2Int> rotatedTiles)
-    {
-        Vector3 spawnPos = new Vector3(baseGridPos.x * cellSize, 0.5f, baseGridPos.y * cellSize);
-        GameObject newBlock = Instantiate(blockPrefab, spawnPos, Quaternion.Euler(0, currentRotation, 0));
-        
-        BlockData data = newBlock.GetComponent<BlockData>();
-
-        foreach (Vector2Int localPos in rotatedTiles)
-        {
-            Vector2Int worldPos = baseGridPos + localPos;
-            
-            // SIMPAN DATA BLOK KE DALAM DICTIONARY
-            gridData.Add(worldPos, data);
         }
     }
 }
