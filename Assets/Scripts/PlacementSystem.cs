@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class PlacementSystem : MonoBehaviour
@@ -7,11 +8,25 @@ public class PlacementSystem : MonoBehaviour
     public LayerMask floorLayer;
 
     [Header("Placement Settings")]
-    public GameObject blockPrefab; 
+    public GameObject blockPrefab;
+
+    private HashSet<Vector3> occupiedTiles = new HashSet<Vector3>();
+    
+    private float currentRotation = 0f;
 
     private void Update()
     {
+        HandleRotation();
         DetectAndPlace();
+    }
+
+    private void HandleRotation()
+    {
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            currentRotation += 90f;
+            highlightIndicator.transform.rotation = Quaternion.Euler(0, currentRotation, 0);
+        }
     }
 
     private void DetectAndPlace()
@@ -21,10 +36,16 @@ public class PlacementSystem : MonoBehaviour
 
         if (Physics.Raycast(ray, out hit, 100f, floorLayer))
         {
+            Vector3 tilePosition = hit.transform.position;
+
+            if (occupiedTiles.Contains(tilePosition))
+            {
+                highlightIndicator.SetActive(false);
+                return; 
+            }
+
             highlightIndicator.SetActive(true);
 
-            Vector3 tilePosition = hit.transform.position;
-            
             Vector3 indicatorPos = tilePosition;
             indicatorPos.y += 0.2f; 
             highlightIndicator.transform.position = indicatorPos;
@@ -45,6 +66,8 @@ public class PlacementSystem : MonoBehaviour
         Vector3 spawnPos = position;
         spawnPos.y += 0.5f; 
 
-        Instantiate(blockPrefab, spawnPos, Quaternion.identity);
+        Instantiate(blockPrefab, spawnPos, Quaternion.Euler(0, currentRotation, 0));
+        
+        occupiedTiles.Add(position);
     }
 }
