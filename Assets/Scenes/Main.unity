@@ -276,6 +276,7 @@ MonoBehaviour:
   minZoom: 2
   maxZoom: 15
   panSpeed: 0.5
+  rotationSpeed: 120
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -604,6 +605,9 @@ MonoBehaviour:
   floorLayer:
     serializedVersion: 2
     m_Bits: 64
+  blockRoster:
+  - {fileID: 8609338929360288412, guid: 906675704dcccba47a5f359a4418ef0c, type: 3}
+  - {fileID: 1694903256901630277, guid: 7df913e6cee7900429ff56227cc919ae, type: 3}
   blockPrefab: {fileID: 1694903256901630277, guid: 7df913e6cee7900429ff56227cc919ae,
     type: 3}
   cellSize: 1

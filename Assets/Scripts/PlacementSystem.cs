@@ -4,31 +4,38 @@ using UnityEngine;
 public class PlacementSystem : MonoBehaviour
 {
     [Header("References")]
-    [Tooltip("Masukkan Prefab HighlightIndicator ke sini")]
     public GameObject indicatorPrefab; 
     public LayerMask floorLayer;
 
     [Header("Placement Settings")]
+    public GameObject[] blockRoster;
     public GameObject blockPrefab;
     public float cellSize = 1f;
 
-    private HashSet<Vector2Int> occupiedTiles = new HashSet<Vector2Int>();
+    public Dictionary<Vector2Int, BlockData> gridData = new Dictionary<Vector2Int, BlockData>();
+    
     private float currentRotation = 0f;
-
-    // Menyimpan daftar kotak indikator yang sedang aktif
     private List<GameObject> activeIndicators = new List<GameObject>();
     private Transform indicatorContainer;
 
     private void Start()
     {
-        // Membuat wadah kosong di Hierarchy agar indikator tidak berantakan
         indicatorContainer = new GameObject("IndicatorContainer").transform;
+        if (blockRoster.Length > 0) blockPrefab = blockRoster[0]; 
     }
 
     private void Update()
     {
+        HandleBlockSelection();
         HandleRotation();
         DetectAndPlace();
+    }
+
+    private void HandleBlockSelection()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha1) && blockRoster.Length > 0) blockPrefab = blockRoster[0];
+        if (Input.GetKeyDown(KeyCode.Alpha2) && blockRoster.Length > 1) blockPrefab = blockRoster[1];
+        if (Input.GetKeyDown(KeyCode.Alpha3) && blockRoster.Length > 2) blockPrefab = blockRoster[2];
     }
 
     private void HandleRotation()
@@ -42,9 +49,7 @@ public class PlacementSystem : MonoBehaviour
     private void DetectAndPlace()
     {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-
-        if (Physics.Raycast(ray, out hit, 100f, floorLayer))
+        if (Physics.Raycast(ray, out RaycastHit hit, 100f, floorLayer))
         {
             int gridX = Mathf.RoundToInt(hit.transform.position.x / cellSize);
             int gridY = Mathf.RoundToInt(hit.transform.position.z / cellSize);
@@ -60,7 +65,7 @@ public class PlacementSystem : MonoBehaviour
             {
                 Vector2Int worldGridPos = baseGridPos + localPos;
 
-                if (occupiedTiles.Contains(worldGridPos) || 
+                if (gridData.ContainsKey(worldGridPos) || 
                     worldGridPos.x < 0 || worldGridPos.x >= 10 || 
                     worldGridPos.y < 0 || worldGridPos.y >= 10)
                 {
@@ -123,11 +128,16 @@ public class PlacementSystem : MonoBehaviour
     private void PlaceBlock(Vector2Int baseGridPos, List<Vector2Int> rotatedTiles)
     {
         Vector3 spawnPos = new Vector3(baseGridPos.x * cellSize, 0.5f, baseGridPos.y * cellSize);
-        Instantiate(blockPrefab, spawnPos, Quaternion.Euler(0, currentRotation, 0));
+        GameObject newBlock = Instantiate(blockPrefab, spawnPos, Quaternion.Euler(0, currentRotation, 0));
+        
+        BlockData data = newBlock.GetComponent<BlockData>();
 
         foreach (Vector2Int localPos in rotatedTiles)
         {
-            occupiedTiles.Add(baseGridPos + localPos);
+            Vector2Int worldPos = baseGridPos + localPos;
+            
+            // SIMPAN DATA BLOK KE DALAM DICTIONARY
+            gridData.Add(worldPos, data);
         }
     }
 }
