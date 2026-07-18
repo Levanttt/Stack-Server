@@ -604,6 +604,8 @@ MonoBehaviour:
   floorLayer:
     serializedVersion: 2
     m_Bits: 64
+  blockPrefab: {fileID: 8609338929360288412, guid: 906675704dcccba47a5f359a4418ef0c,
+    type: 3}
 --- !u!4 &2064101058
 Transform:
   m_ObjectHideFlags: 0
