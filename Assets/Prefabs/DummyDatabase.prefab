@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 1568859750442852191}
   - component: {fileID: 543684836193056785}
   - component: {fileID: 7196020397722774127}
+  - component: {fileID: 2424202365819856831}
   m_Layer: 0
   m_Name: DummyDatabase
   m_TagString: Untagged
@@ -105,3 +106,17 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &2424202365819856831
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8609338929360288412}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 578ada32be06fb84d996e2224877b95f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  localTiles:
+  - {x: 0, y: 0}
