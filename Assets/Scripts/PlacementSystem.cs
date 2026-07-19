@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 using TMPro;
 
 public class PlacementSystem : MonoBehaviour
@@ -11,86 +10,76 @@ public class PlacementSystem : MonoBehaviour
     public ClusterManager clusterManager;
     public ScoreManager scoreManager;
     public VirusManager virusManager;
+    public BlockQueueManager queueManager;
 
-    [Header("References")]
-    public GameObject indicatorPrefab; 
+    [Header("Placement References")]
     public LayerMask floorLayer;
-
-    [Header("Placement Settings")]
-    public GameObject[] blockRoster;
-    private GameObject blockPrefab;
+    public GameObject blockPrefab; 
     public float cellSize = 1f;
+
+    [Header("Preview Settings (Hologram)")]
+    public Material validMaterial; 
+    public Material invalidMaterial; 
+    
+    private GameObject previewObject;
+    private GameObject lastBlockPrefab;
 
     [Header("Global Stock System")]
     public int currentGlobalStock = 15; 
-    public Sprite[] blockSprites;      
-    
-    [Header("UI References")]
-    public Image nextBlockImage;       
     public TextMeshProUGUI totalStockText;
-    public GameObject[] uiCards;       
 
     public Dictionary<Vector2Int, BlockData> gridData = new Dictionary<Vector2Int, BlockData>();
     
     private float currentRotation = 0f;
-    private int currentBlockIndex = 0; 
-    private List<GameObject> activeIndicators = new List<GameObject>();
-    private Transform indicatorContainer;
 
     private void Start()
     {
-        indicatorContainer = new GameObject("IndicatorContainer").transform;
-        if (blockRoster.Length > 0) 
-        {
-            SelectBlock(0);
-        }
         UpdatePreviewUI();
     }
 
     private void Update()
     {
-        HandleBlockSelection();
+        HandleBlockSelection(); // BUG FIX: Mengembalikan fungsi tombol 1, 2, 3
         HandleRotation();
         DetectAndPlace();
     }
 
+    // BUG FIX: Fungsi shortcut keyboard diaktifkan kembali
     private void HandleBlockSelection()
     {
-        if (Input.GetKeyDown(KeyCode.Alpha1)) SelectBlock(0);
-        if (Input.GetKeyDown(KeyCode.Alpha2)) SelectBlock(1);
-        if (Input.GetKeyDown(KeyCode.Alpha3)) SelectBlock(2);
-    }
+        if (queueManager == null) return;
 
-    public void SelectBlock(int rosterIndex)
-    {
-        if (rosterIndex >= 0 && rosterIndex < blockRoster.Length)
-        {
-            currentBlockIndex = rosterIndex;
-            blockPrefab = blockRoster[rosterIndex];
-            UpdatePreviewUI();
-        }
+        if (Input.GetKeyDown(KeyCode.Alpha1)) queueManager.SelectBlock(0);
+        if (Input.GetKeyDown(KeyCode.Alpha2)) queueManager.SelectBlock(1);
+        if (Input.GetKeyDown(KeyCode.Alpha3)) queueManager.SelectBlock(2);
     }
 
     private void HandleRotation()
     {
-        if (Input.GetKeyDown(KeyCode.R))
+        // FITUR BARU: Menggunakan tombol Spasi
+        if (blockPrefab != null && Input.GetKeyDown(KeyCode.Space))
         {
             currentRotation += 90f;
+            
+            if (previewObject != null)
+            {
+                previewObject.transform.rotation = Quaternion.Euler(0, currentRotation, 0);
+            }
         }
     }
 
     private void DetectAndPlace()
     {
-        if (EventSystem.current.IsPointerOverGameObject())
+        if (EventSystem.current.IsPointerOverGameObject() || blockPrefab == null || currentGlobalStock <= 0)
         {
-            ClearIndicators();
+            HidePreview();
             return;
         }
 
-        if (currentGlobalStock <= 0)
+        if (blockPrefab != lastBlockPrefab)
         {
-            ClearIndicators();
-            return;
+            CreatePreviewObject();
+            lastBlockPrefab = blockPrefab;
         }
 
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -103,13 +92,11 @@ public class PlacementSystem : MonoBehaviour
             BlockData blockData = blockPrefab.GetComponent<BlockData>();
             if (blockData == null) return;
 
-            // Menggunakan TileOccupancy dari BlockData
             List<TileOccupancy> rotatedTiles = blockData.GetRotatedTiles(currentRotation);
             bool canPlace = true;
 
             foreach (TileOccupancy tile in rotatedTiles)
             {
-                // Akses koordinat dari struct tile.position
                 Vector2Int worldGridPos = baseGridPos + tile.position;
 
                 if (gridData.ContainsKey(worldGridPos) || 
@@ -121,29 +108,71 @@ public class PlacementSystem : MonoBehaviour
                 }
             }
 
-            if (canPlace)
+            if (previewObject != null)
             {
-                UpdateIndicators(baseGridPos, rotatedTiles);
-
-                if (Input.GetMouseButtonDown(0))
-                {
-                    PlaceBlock(baseGridPos, rotatedTiles);
-                }
+                previewObject.SetActive(true);
+                previewObject.transform.position = new Vector3(baseGridPos.x * cellSize, 0.1f, baseGridPos.y * cellSize);
+                SetPreviewColor(canPlace);
             }
-            else
+
+            if (canPlace && Input.GetMouseButtonDown(0))
             {
-                ClearIndicators();
+                PlaceBlock(baseGridPos, rotatedTiles);
+                HidePreview(); 
             }
         }
         else
         {
-            ClearIndicators();
+            HidePreview();
+        }
+    }
+
+    private void CreatePreviewObject()
+    {
+        if (previewObject != null) Destroy(previewObject);
+        if (blockPrefab == null) return;
+
+        // BUG FIX: Reset rotasi setiap kali memegang blok baru agar logika dan visual sinkron
+        currentRotation = 0f; 
+
+        previewObject = Instantiate(blockPrefab);
+        previewObject.name = "BlockPreview_Hologram";
+        
+        // Terapkan rotasi awal ke hologram
+        previewObject.transform.rotation = Quaternion.Euler(0, currentRotation, 0);
+
+        Destroy(previewObject.GetComponent<BlockData>());
+        Collider[] colliders = previewObject.GetComponentsInChildren<Collider>();
+        foreach (Collider col in colliders)
+        {
+            Destroy(col);
+        }
+    }
+
+    private void SetPreviewColor(bool isValid)
+    {
+        if (previewObject == null) return;
+
+        Material targetMat = isValid ? validMaterial : invalidMaterial;
+        MeshRenderer[] renderers = previewObject.GetComponentsInChildren<MeshRenderer>();
+        
+        foreach (MeshRenderer r in renderers)
+        {
+            r.material = targetMat;
+        }
+    }
+
+    private void HidePreview()
+    {
+        if (previewObject != null)
+        {
+            previewObject.SetActive(false);
         }
     }
 
     private void PlaceBlock(Vector2Int baseGridPos, List<TileOccupancy> rotatedTiles)
     {
-        Vector3 spawnPos = new Vector3(baseGridPos.x * cellSize, 0.5f, baseGridPos.y * cellSize);
+        Vector3 spawnPos = new Vector3(baseGridPos.x * cellSize, 0.1f, baseGridPos.y * cellSize);
         GameObject newBlock = Instantiate(blockPrefab, spawnPos, Quaternion.Euler(0, currentRotation, 0));
         
         BlockData data = newBlock.GetComponent<BlockData>();
@@ -152,90 +181,29 @@ public class PlacementSystem : MonoBehaviour
         {
             Vector2Int worldPos = baseGridPos + tile.position;
             
-            if (!gridData.ContainsKey(worldPos))
-            {
-                gridData.Add(worldPos, data);
-            }
-
-            if (gridManager != null)
-            {
-                gridManager.AddTileToGrid(worldPos, tile.type, newBlock);
-            }
+            if (!gridData.ContainsKey(worldPos)) gridData.Add(worldPos, data);
+            if (gridManager != null) gridManager.AddTileToGrid(worldPos, tile.type, newBlock);
         }
+
+        if (queueManager != null) queueManager.OnBlockPlacedSuccessfully();
 
         currentGlobalStock--;
         UpdatePreviewUI();
 
-        if (clusterManager != null)
-            clusterManager.CalculateClusters();
-
-        if (scoreManager != null)
-            scoreManager.CalculateScore();
-
-        if (virusManager != null)
-            virusManager.NeutralizeVirus();
+        if (clusterManager != null) clusterManager.CalculateClusters();
+        if (scoreManager != null) scoreManager.CalculateScore();
+        if (virusManager != null) virusManager.NeutralizeVirus();
     }
 
     private void UpdatePreviewUI()
     {
         if (totalStockText != null)
         {
-            int displayStock = currentGlobalStock - 3;
+            int displayStock = currentGlobalStock - 3; 
             if (displayStock < 0) displayStock = 0;
 
             totalStockText.text = displayStock.ToString();
             totalStockText.color = displayStock <= 0 ? Color.red : Color.white;
-        }
-
-        if (currentBlockIndex < blockSprites.Length && nextBlockImage != null)
-        {
-            nextBlockImage.sprite = blockSprites[currentBlockIndex];
-        }
-
-        if (uiCards != null)
-        {
-            for (int i = 0; i < uiCards.Length; i++)
-            {
-                if (uiCards[i] != null)
-                {
-                    uiCards[i].SetActive(currentGlobalStock >= (i + 1));
-                }
-            }
-        }
-
-        if (currentGlobalStock > 0 && currentGlobalStock < (currentBlockIndex + 1))
-        {
-            SelectBlock(currentGlobalStock - 1);
-        }
-    }
-
-    private void UpdateIndicators(Vector2Int baseGridPos, List<TileOccupancy> rotatedTiles)
-    {
-        while (activeIndicators.Count < rotatedTiles.Count)
-        {
-            GameObject newIndicator = Instantiate(indicatorPrefab, indicatorContainer);
-            activeIndicators.Add(newIndicator);
-        }
-
-        for (int i = 0; i < activeIndicators.Count; i++)
-        {
-            activeIndicators[i].SetActive(i < rotatedTiles.Count);
-        }
-
-        for (int i = 0; i < rotatedTiles.Count; i++)
-        {
-            // Akses koordinat dari struct tile.position
-            Vector2Int tilePos = baseGridPos + rotatedTiles[i].position;
-            Vector3 worldPos = new Vector3(tilePos.x * cellSize, 0.2f, tilePos.y * cellSize);
-            activeIndicators[i].transform.position = worldPos;
-        }
-    }
-
-    private void ClearIndicators()
-    {
-        foreach (GameObject indicator in activeIndicators)
-        {
-            indicator.SetActive(false);
         }
     }
 }

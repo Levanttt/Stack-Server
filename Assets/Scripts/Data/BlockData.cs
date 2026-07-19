@@ -10,6 +10,10 @@ public struct TileOccupancy
 
 public class BlockData : MonoBehaviour
 {
+    [Header("UI Settings")]
+    [Tooltip("Gambar 2D untuk ditampilkan di tombol UI Card (1, 2, 3)")]
+    public Sprite blockIcon;
+
     [Header("Block Shape Occupancy")]
     [Tooltip("Daftar ubin yang menyusun blok ini, lengkap dengan tipenya.")]
     public List<TileOccupancy> localTiles = new List<TileOccupancy>();
