@@ -1,9 +1,14 @@
 fileFormatVersion: 2
-guid: de6348df3033e04429a8609e112b0aac
+guid: 8f2959be0ba44a343b4a1b930ece592e
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: UVfloor_selected
+    second: {fileID: 2800000, guid: e4691b1eca4855240b03b2b46b534086, type: 3}
   materials:
     materialImportMode: 2
     materialName: 0
