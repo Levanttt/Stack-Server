@@ -1,27 +1,40 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
+public struct TileOccupancy
+{
+    public Vector2Int position;
+    public GridTileType type;
+}
+
 public class BlockData : MonoBehaviour
 {
-    [Header("Block Shape Ocupancy")]
-    [Tooltip("Posisi ubin yang akan dimakan oleh blok ini (relatif terhadap titik pusat 0,0)")]
-    public List<Vector2Int> localTiles = new List<Vector2Int> { new Vector2Int(0, 0) };
+    [Header("Block Shape Occupancy")]
+    [Tooltip("Daftar ubin yang menyusun blok ini, lengkap dengan tipenya.")]
+    public List<TileOccupancy> localTiles = new List<TileOccupancy>();
 
-    public List<Vector2Int> GetRotatedTiles(float rotationAngle)
+    public List<TileOccupancy> GetRotatedTiles(float rotationAngle)
     {
-        List<Vector2Int> rotatedTiles = new List<Vector2Int>();
+        List<TileOccupancy> rotatedTiles = new List<TileOccupancy>();
         int angle = Mathf.RoundToInt(rotationAngle) % 360;
 
-        foreach (Vector2Int tile in localTiles)
+        foreach (TileOccupancy tile in localTiles)
         {
-            Vector2Int rotatedTile = tile;
+            Vector2Int rotatedPos = tile.position;
             
             if (angle == 90 || angle == -270)
-                rotatedTile = new Vector2Int(tile.y, -tile.x);
+                rotatedPos = new Vector2Int(tile.position.y, -tile.position.x);
             else if (angle == 180 || angle == -180)
-                rotatedTile = new Vector2Int(-tile.x, -tile.y);
+                rotatedPos = new Vector2Int(-tile.position.x, -tile.position.y);
             else if (angle == 270 || angle == -90)
-                rotatedTile = new Vector2Int(-tile.y, tile.x);
+                rotatedPos = new Vector2Int(-tile.position.y, tile.position.x);
+
+            TileOccupancy rotatedTile = new TileOccupancy
+            {
+                position = rotatedPos,
+                type = tile.type
+            };
 
             rotatedTiles.Add(rotatedTile);
         }

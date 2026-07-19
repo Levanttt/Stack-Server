@@ -6,6 +6,12 @@ using TMPro;
 
 public class PlacementSystem : MonoBehaviour
 {
+    [Header("Manager References")]
+    public GridManager gridManager; 
+    public ClusterManager clusterManager;
+    public ScoreManager scoreManager;
+    public VirusManager virusManager;
+
     [Header("References")]
     public GameObject indicatorPrefab; 
     public LayerMask floorLayer;
@@ -16,13 +22,13 @@ public class PlacementSystem : MonoBehaviour
     public float cellSize = 1f;
 
     [Header("Global Stock System")]
-    public int currentGlobalStock = 15; // Stok total global
-    public Sprite[] blockSprites;      // Ikon untuk preview blok
+    public int currentGlobalStock = 15; 
+    public Sprite[] blockSprites;      
     
     [Header("UI References")]
-    public Image nextBlockImage;       // Panel gambar di pojok kiri atas
+    public Image nextBlockImage;       
     public TextMeshProUGUI totalStockText;
-    public GameObject[] uiCards; // Teks sisa stok di pojok kiri atas
+    public GameObject[] uiCards;       
 
     public Dictionary<Vector2Int, BlockData> gridData = new Dictionary<Vector2Int, BlockData>();
     
@@ -81,7 +87,6 @@ public class PlacementSystem : MonoBehaviour
             return;
         }
 
-        // Cek stok global
         if (currentGlobalStock <= 0)
         {
             ClearIndicators();
@@ -98,12 +103,14 @@ public class PlacementSystem : MonoBehaviour
             BlockData blockData = blockPrefab.GetComponent<BlockData>();
             if (blockData == null) return;
 
-            List<Vector2Int> rotatedTiles = blockData.GetRotatedTiles(currentRotation);
+            // Menggunakan TileOccupancy dari BlockData
+            List<TileOccupancy> rotatedTiles = blockData.GetRotatedTiles(currentRotation);
             bool canPlace = true;
 
-            foreach (Vector2Int localPos in rotatedTiles)
+            foreach (TileOccupancy tile in rotatedTiles)
             {
-                Vector2Int worldGridPos = baseGridPos + localPos;
+                // Akses koordinat dari struct tile.position
+                Vector2Int worldGridPos = baseGridPos + tile.position;
 
                 if (gridData.ContainsKey(worldGridPos) || 
                     worldGridPos.x < 0 || worldGridPos.x >= 10 || 
@@ -134,21 +141,39 @@ public class PlacementSystem : MonoBehaviour
         }
     }
 
-    private void PlaceBlock(Vector2Int baseGridPos, List<Vector2Int> rotatedTiles)
+    private void PlaceBlock(Vector2Int baseGridPos, List<TileOccupancy> rotatedTiles)
     {
         Vector3 spawnPos = new Vector3(baseGridPos.x * cellSize, 0.5f, baseGridPos.y * cellSize);
         GameObject newBlock = Instantiate(blockPrefab, spawnPos, Quaternion.Euler(0, currentRotation, 0));
         
         BlockData data = newBlock.GetComponent<BlockData>();
 
-        foreach (Vector2Int localPos in rotatedTiles)
+        foreach (TileOccupancy tile in rotatedTiles)
         {
-            Vector2Int worldPos = baseGridPos + localPos;
-            gridData.Add(worldPos, data);
+            Vector2Int worldPos = baseGridPos + tile.position;
+            
+            if (!gridData.ContainsKey(worldPos))
+            {
+                gridData.Add(worldPos, data);
+            }
+
+            if (gridManager != null)
+            {
+                gridManager.AddTileToGrid(worldPos, tile.type, newBlock);
+            }
         }
 
         currentGlobalStock--;
         UpdatePreviewUI();
+
+        if (clusterManager != null)
+            clusterManager.CalculateClusters();
+
+        if (scoreManager != null)
+            scoreManager.CalculateScore();
+
+        if (virusManager != null)
+            virusManager.NeutralizeVirus();
     }
 
     private void UpdatePreviewUI()
@@ -184,7 +209,7 @@ public class PlacementSystem : MonoBehaviour
         }
     }
 
-    private void UpdateIndicators(Vector2Int baseGridPos, List<Vector2Int> rotatedTiles)
+    private void UpdateIndicators(Vector2Int baseGridPos, List<TileOccupancy> rotatedTiles)
     {
         while (activeIndicators.Count < rotatedTiles.Count)
         {
@@ -199,7 +224,8 @@ public class PlacementSystem : MonoBehaviour
 
         for (int i = 0; i < rotatedTiles.Count; i++)
         {
-            Vector2Int tilePos = baseGridPos + rotatedTiles[i];
+            // Akses koordinat dari struct tile.position
+            Vector2Int tilePos = baseGridPos + rotatedTiles[i].position;
             Vector3 worldPos = new Vector3(tilePos.x * cellSize, 0.2f, tilePos.y * cellSize);
             activeIndicators[i].transform.position = worldPos;
         }
