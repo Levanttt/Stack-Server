@@ -21,7 +21,8 @@ public class PlacementSystem : MonoBehaviour
     
     [Header("UI References")]
     public Image nextBlockImage;       // Panel gambar di pojok kiri atas
-    public TextMeshProUGUI totalStockText; // Teks sisa stok di pojok kiri atas
+    public TextMeshProUGUI totalStockText;
+    public GameObject[] uiCards; // Teks sisa stok di pojok kiri atas
 
     public Dictionary<Vector2Int, BlockData> gridData = new Dictionary<Vector2Int, BlockData>();
     
@@ -155,17 +156,31 @@ public class PlacementSystem : MonoBehaviour
         if (totalStockText != null)
         {
             int displayStock = currentGlobalStock - 3;
-            
             if (displayStock < 0) displayStock = 0;
 
             totalStockText.text = displayStock.ToString();
-            
             totalStockText.color = displayStock <= 0 ? Color.red : Color.white;
         }
 
         if (currentBlockIndex < blockSprites.Length && nextBlockImage != null)
         {
             nextBlockImage.sprite = blockSprites[currentBlockIndex];
+        }
+
+        if (uiCards != null)
+        {
+            for (int i = 0; i < uiCards.Length; i++)
+            {
+                if (uiCards[i] != null)
+                {
+                    uiCards[i].SetActive(currentGlobalStock >= (i + 1));
+                }
+            }
+        }
+
+        if (currentGlobalStock > 0 && currentGlobalStock < (currentBlockIndex + 1))
+        {
+            SelectBlock(currentGlobalStock - 1);
         }
     }
 

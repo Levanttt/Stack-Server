@@ -1051,8 +1051,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa7c34ed1d3fced4db73356395139c03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  width: 10
-  height: 10
+  width: 5
+  height: 5
   cellSize: 1
   floorTilePrefab: {fileID: 6845397153108933539, guid: 996b409a74f0aa049aa6a20c85f17b31,
     type: 3}
@@ -1874,6 +1874,10 @@ MonoBehaviour:
   - {fileID: 0}
   nextBlockImage: {fileID: 0}
   totalStockText: {fileID: 1893894604}
+  uiCards:
+  - {fileID: 1307472898}
+  - {fileID: 672570906}
+  - {fileID: 1269864330}
 --- !u!4 &2064101058
 Transform:
   m_ObjectHideFlags: 0
