@@ -1051,8 +1051,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa7c34ed1d3fced4db73356395139c03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  width: 5
-  height: 5
+  width: 10
+  height: 10
   cellSize: 1
   floorTilePrefab: {fileID: 6845397153108933539, guid: 996b409a74f0aa049aa6a20c85f17b31,
     type: 3}
@@ -1594,6 +1594,59 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1674445487
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1674445489}
+  - component: {fileID: 1674445488}
+  m_Layer: 0
+  m_Name: ScoreManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1674445488
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1674445487}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33e02a1e7d34f9a438803243abe7b7d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gridManager: {fileID: 734200713}
+  clusterManager: {fileID: 2064101059}
+  scoreDatabaseSingle: 5
+  scoreDatabaseAdjacency: 15
+  scoreACPlacement: 25
+  scorePerCableAdjacent: 5
+  scorePerDatabaseAdjacent: 10
+  baseScorePerDatabaseInCluster: 20
+  totalScore: 0
+--- !u!4 &1674445489
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1674445487}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -5.55149, y: -5.761124, z: 1.7286792}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1893894602
 GameObject:
   m_ObjectHideFlags: 0
@@ -1831,6 +1884,51 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!1 &2054220313
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2054220315}
+  - component: {fileID: 2054220314}
+  m_Layer: 0
+  m_Name: VirusManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2054220314
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2054220313}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b016025751bfb7848addaac850873158, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gridManager: {fileID: 734200713}
+--- !u!4 &2054220315
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2054220313}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -5.55149, y: -5.761124, z: 1.7286792}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2064101056
 GameObject:
   m_ObjectHideFlags: 0
@@ -1841,6 +1939,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2064101058}
   - component: {fileID: 2064101057}
+  - component: {fileID: 2064101059}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1860,6 +1959,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b226223c89a0ddd46837d2af2b1702da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gridManager: {fileID: 734200713}
+  clusterManager: {fileID: 2064101059}
+  scoreManager: {fileID: 1674445488}
+  virusManager: {fileID: 2054220314}
   indicatorPrefab: {fileID: 1193286500}
   floorLayer:
     serializedVersion: 2
@@ -1893,6 +1996,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2064101059
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2064101056}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 682507315591f83499e8fe83743edfa2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gridManager: {fileID: 734200713}
+  baseHeatTolerance: 2
+  coolingPowerPerAC: 3
+  activeClusters: []
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -1905,3 +2024,5 @@ SceneRoots:
   - {fileID: 559387500}
   - {fileID: 1906681625}
   - {fileID: 1456024916}
+  - {fileID: 1674445489}
+  - {fileID: 2054220315}

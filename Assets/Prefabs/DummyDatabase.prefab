@@ -119,4 +119,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   localTiles:
-  - {x: 0, y: 0}
+  - position: {x: 0, y: 0}
+    type: 1
