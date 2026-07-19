@@ -8,7 +8,7 @@ ModelImporter:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: UVfloor_selected
-    second: {fileID: 2800000, guid: e4691b1eca4855240b03b2b46b534086, type: 3}
+    second: {fileID: 2800000, guid: 4f7e9fc72abf10c438ef6083dc66ec24, type: 3}
   materials:
     materialImportMode: 2
     materialName: 0
