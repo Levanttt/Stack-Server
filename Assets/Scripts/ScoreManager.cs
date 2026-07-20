@@ -14,11 +14,11 @@ public class ScoreManager : MonoBehaviour
     public int scorePerCableAdjacent = 5; 
     public int scorePerDatabaseAdjacent = 10;
     public int baseScorePerDatabaseInCluster = 20;
+    public int targetMilestoneScore = 320; // Tambahkan ini sebagai target
 
     [Header("Live Score")]
     public int totalScore = 0;
 
-    // Helper untuk ngecek apakah kotak ini termasuk varian kabel
     private bool IsCable(GridTileType type)
     {
         return type == GridTileType.Kabel_I || type == GridTileType.Kabel_L || 
@@ -31,17 +31,14 @@ public class ScoreManager : MonoBehaviour
         int localPlacementScore = 0;
         int connectionScore = 0;
 
-        // 1. HITUNG POIN PENEMPATAN LOKAL (Database, AC, Kabel)
         foreach (var kvp in gridManager.gridMap)
         {
             Vector2Int pos = kvp.Key;
             TileData tile = kvp.Value;
 
-            // Skor Database
             if (tile.type == GridTileType.Database)
             {
                 localPlacementScore += scoreDatabaseSingle; 
-                
                 List<TileData> neighbors = gridManager.GetOrthogonalNeighbors(pos);
                 foreach (TileData neighbor in neighbors)
                 {
@@ -49,12 +46,10 @@ public class ScoreManager : MonoBehaviour
                         localPlacementScore += scoreDatabaseAdjacency;
                 }
             }
-            // Skor AC
             else if (tile.type == GridTileType.Cooling)
             {
                 localPlacementScore += scoreACPlacement;
             }
-            // Skor Kabel
             else if (IsCable(tile.type))
             {
                 List<TileData> neighbors = gridManager.GetOrthogonalNeighbors(pos);
@@ -66,7 +61,6 @@ public class ScoreManager : MonoBehaviour
             }
         }
 
-        // 2. HITUNG POIN MULTIPLIER KONEKSI (BFS Jaringan Kabel)
         Dictionary<Vector2Int, int> tileToClusterID = new Dictionary<Vector2Int, int>();
         foreach (var cluster in clusterManager.activeClusters)
         {
@@ -86,21 +80,17 @@ public class ScoreManager : MonoBehaviour
                 Queue<Vector2Int> queue = new Queue<Vector2Int>();
                 queue.Enqueue(kvp.Key);
                 visitedCables.Add(kvp.Key);
-
                 HashSet<int> connectedClusters = new HashSet<int>();
 
                 while (queue.Count > 0)
                 {
                     Vector2Int currentPos = queue.Dequeue();
-
                     foreach (Vector2Int d in dirs)
                     {
                         Vector2Int neighborPos = currentPos + d;
-                        
                         if (gridManager.gridMap.ContainsKey(neighborPos))
                         {
                             TileData neighborTile = gridManager.gridMap[neighborPos];
-
                             if (IsCable(neighborTile.type) && !visitedCables.Contains(neighborPos))
                             {
                                 visitedCables.Add(neighborPos);
@@ -121,9 +111,7 @@ public class ScoreManager : MonoBehaviour
                     {
                         ClusterData cData = clusterManager.activeClusters.Find(c => c.clusterID == id);
                         if (cData != null)
-                        {
                             combinedClusterScore += (cData.totalDatabase * baseScorePerDatabaseInCluster);
-                        }
                     }
                     connectionScore += (combinedClusterScore * 2);
                 }
@@ -131,32 +119,13 @@ public class ScoreManager : MonoBehaviour
         }
 
         totalScore = localPlacementScore + connectionScore;
-        Debug.Log($"[SCORE UPDATE] Lokal: {localPlacementScore} | Multiplier: {connectionScore} | TOTAL: {totalScore}");
-    }
-
-    public void CalculateMalwarePenalty()
-    {
-        foreach (var kvp in gridManager.gridMap)
+        
+        // Integrasi UI: Kirim update ke UIManager
+        if (UIManager.Instance != null)
         {
-            if (kvp.Value.type == GridTileType.Malware && !kvp.Value.isNeutralized)
-            {
-                // Deteksi 8-arah (termasuk diagonal)
-                for (int x = -1; x <= 1; x++)
-                {
-                    for (int y = -1; y <= 1; y++)
-                    {
-                        if (x == 0 && y == 0) continue;
-                        
-                        Vector2Int neighborPos = kvp.Key + new Vector2Int(x, y);
-                        if (gridManager.gridMap.ContainsKey(neighborPos))
-                        {
-                            // Malware mengurangi skor Database di sekitarnya
-                            if (gridManager.gridMap[neighborPos].type == GridTileType.Database)
-                                totalScore -= 50; // Penalty
-                        }
-                    }
-                }
-            }
+            UIManager.Instance.UpdateHUDScore(totalScore, targetMilestoneScore);
         }
+
+        Debug.Log($"[SCORE UPDATE] TOTAL: {totalScore}");
     }
 }

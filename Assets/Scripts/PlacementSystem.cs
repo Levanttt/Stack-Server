@@ -6,7 +6,7 @@ using TMPro;
 public class PlacementSystem : MonoBehaviour
 {
     [Header("Manager References")]
-    public GridManager gridManager; 
+    public GridManager gridManager;
     public ClusterManager clusterManager;
     public ScoreManager scoreManager;
     public VirusManager virusManager;
@@ -14,22 +14,21 @@ public class PlacementSystem : MonoBehaviour
 
     [Header("Placement References")]
     public LayerMask floorLayer;
-    public GameObject blockPrefab; 
+    public GameObject blockPrefab;
     public float cellSize = 1f;
 
     [Header("Preview Settings (Hologram)")]
-    public Material validMaterial; 
-    public Material invalidMaterial; 
-    
+    public Material validMaterial;
+    public Material invalidMaterial;
+
     private GameObject previewObject;
     private GameObject lastBlockPrefab;
 
     [Header("Global Stock System")]
-    public int currentGlobalStock = 15; 
+    public int currentGlobalStock = 15;
     public TextMeshProUGUI totalStockText;
 
     public Dictionary<Vector2Int, BlockData> gridData = new Dictionary<Vector2Int, BlockData>();
-    
     private float currentRotation = 0f;
 
     private void Start()
@@ -70,7 +69,7 @@ public class PlacementSystem : MonoBehaviour
         if (blockPrefab != null && Input.GetKeyDown(KeyCode.Space))
         {
             currentRotation += 90f;
-            
+
             if (previewObject != null)
             {
                 previewObject.transform.rotation = Quaternion.Euler(0, currentRotation, 0);
@@ -132,7 +131,7 @@ public class PlacementSystem : MonoBehaviour
             if (canPlace && Input.GetMouseButtonDown(0))
             {
                 PlaceBlock(baseGridPos, rotatedTiles);
-                HidePreview(); 
+                HidePreview();
             }
         }
         else
@@ -146,11 +145,11 @@ public class PlacementSystem : MonoBehaviour
         if (previewObject != null) Destroy(previewObject);
         if (blockPrefab == null) return;
 
-        currentRotation = 0f; 
+        currentRotation = 0f;
 
         previewObject = Instantiate(blockPrefab);
         previewObject.name = "BlockPreview_Hologram";
-        
+
         previewObject.transform.rotation = Quaternion.Euler(0, currentRotation, 0);
 
         Destroy(previewObject.GetComponent<BlockData>());
@@ -167,7 +166,7 @@ public class PlacementSystem : MonoBehaviour
 
         Material targetMat = isValid ? validMaterial : invalidMaterial;
         MeshRenderer[] renderers = previewObject.GetComponentsInChildren<MeshRenderer>();
-        
+
         foreach (MeshRenderer r in renderers)
         {
             r.material = targetMat;
@@ -186,34 +185,39 @@ public class PlacementSystem : MonoBehaviour
     {
         Vector3 spawnPos = new Vector3(baseGridPos.x * cellSize, 0.1f, baseGridPos.y * cellSize);
         GameObject newBlock = Instantiate(blockPrefab, spawnPos, Quaternion.Euler(0, currentRotation, 0));
-        
+
         BlockData data = newBlock.GetComponent<BlockData>();
 
         foreach (TileOccupancy tile in rotatedTiles)
         {
             Vector2Int worldPos = baseGridPos + tile.position;
-            
+
             if (!gridData.ContainsKey(worldPos)) gridData.Add(worldPos, data);
             if (gridManager != null) gridManager.AddTileToGrid(worldPos, tile.type, newBlock);
         }
 
+        // Hitung skor setelah penempatan
+        if (scoreManager != null) scoreManager.CalculateScore();
+
+        // Update queue
         if (queueManager != null) queueManager.OnBlockPlacedSuccessfully();
 
         currentGlobalStock--;
         UpdatePreviewUI();
 
         if (clusterManager != null) clusterManager.CalculateClusters();
-        if (scoreManager != null) scoreManager.CalculateScore();
         if (virusManager != null) virusManager.NeutralizeVirus();
 
+        // Cek Game Over
         if (queueManager != null)
         {
             List<GameObject> currentCards = queueManager.GetCurrentAvailableBlocks();
             bool isGameOver = CheckForGameOver(currentCards);
-            
+
             if (isGameOver)
             {
-                GameStateManager.Instance.ChangeState(GameState.GameOver);
+                if (UIManager.Instance != null) UIManager.Instance.ShowGameOverPanel(scoreManager.totalScore);
+                if (GameStateManager.Instance != null) GameStateManager.Instance.ChangeState(GameState.GameOver);
             }
         }
     }
@@ -222,7 +226,7 @@ public class PlacementSystem : MonoBehaviour
     {
         if (totalStockText != null)
         {
-            int displayStock = currentGlobalStock - 3; 
+            int displayStock = currentGlobalStock - 3;
             if (displayStock < 0) displayStock = 0;
 
             totalStockText.text = displayStock.ToString();
@@ -232,6 +236,8 @@ public class PlacementSystem : MonoBehaviour
 
     private bool CheckForGameOver(List<GameObject> availableBlockPrefabs)
     {
+        if (gridManager == null) return false;
+
         List<Vector2Int> emptyTiles = new List<Vector2Int>();
         foreach (Vector2Int floorPos in gridManager.floorGrid.Keys)
         {
@@ -244,7 +250,7 @@ public class PlacementSystem : MonoBehaviour
         foreach (GameObject blockPrefab in availableBlockPrefabs)
         {
             if (blockPrefab == null) continue;
-            
+
             BlockData blockData = blockPrefab.GetComponent<BlockData>();
             if (blockData == null) continue;
 
@@ -252,30 +258,30 @@ public class PlacementSystem : MonoBehaviour
             foreach (float rot in rotations)
             {
                 List<TileOccupancy> rotatedTiles = blockData.GetRotatedTiles(rot);
-                
+
                 foreach (Vector2Int basePos in emptyTiles)
                 {
                     bool canPlaceThis = true;
-                    
+
                     foreach (TileOccupancy tile in rotatedTiles)
                     {
                         Vector2Int checkPos = basePos + tile.position;
-                        
+
                         if (gridData.ContainsKey(checkPos) || !gridManager.floorGrid.ContainsKey(checkPos))
                         {
                             canPlaceThis = false;
-                            break; 
+                            break;
                         }
                     }
-                    
+
                     if (canPlaceThis)
                     {
-                        return false; 
+                        return false;
                     }
                 }
             }
         }
-        
+
         return true;
     }
 }
