@@ -339,7 +339,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 7
+  orthographic size: 8
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -364,7 +364,7 @@ Transform:
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
   m_LocalRotation: {x: 0.23911765, y: 0.3696438, z: -0.09904577, w: 0.89239913}
-  m_LocalPosition: {x: -5, y: 10, z: -5}
+  m_LocalPosition: {x: -20, y: 18, z: -20}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -426,10 +426,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 426b43de8f70edf4d9c7194706ef977c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  debugMode: 0
+  gridManager: {fileID: 734200713}
+  cameraTarget: {fileID: 1019976638}
   zoomSpeed: 10
   minZoom: 2
   maxZoom: 15
-  panSpeed: 0.5
+  panSpeed: 1
+  smoothSpeed: 3
+  baseZoom: 1
+  zoomMultiplier: 0.5
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -782,11 +788,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa7c34ed1d3fced4db73356395139c03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  width: 10
-  height: 10
+  minX: 0
+  maxX: 4
+  minY: 0
+  maxY: 4
   cellSize: 1
   floorTilePrefab: {fileID: 6845397153108933539, guid: 996b409a74f0aa049aa6a20c85f17b31,
     type: 3}
+  floorContainer: {fileID: 1388119130}
+  cameraTargetObject: {fileID: 1019976638}
+  spawnInterval: 0.02
+  animDuration: 0.2
+  startOffsetY: -2
+  currentMilestone: 1
 --- !u!4 &734200714
 Transform:
   m_ObjectHideFlags: 0
@@ -796,7 +810,7 @@ Transform:
   m_GameObject: {fileID: 734200712}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 4.45, y: 0, z: 4.01}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -846,6 +860,37 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1019976637
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1019976638}
+  m_Layer: 0
+  m_Name: CameraTarget
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1019976638
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1019976637}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1.68, y: -0.72005033, z: 1.5461905}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1115,6 +1160,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1307472898}
   m_CullTransparentMesh: 1
+--- !u!1 &1388119129
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1388119130}
+  m_Layer: 0
+  m_Name: Floor_Container
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1388119130
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1388119129}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.2738552, y: -0.72005033, z: 1.5461905}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1456024913
 GameObject:
   m_ObjectHideFlags: 0
@@ -1638,6 +1714,7 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 330585546}
+  - {fileID: 1019976638}
   - {fileID: 410087041}
   - {fileID: 832575519}
   - {fileID: 734200714}
@@ -1647,3 +1724,4 @@ SceneRoots:
   - {fileID: 1456024916}
   - {fileID: 1674445489}
   - {fileID: 2054220315}
+  - {fileID: 1388119130}
