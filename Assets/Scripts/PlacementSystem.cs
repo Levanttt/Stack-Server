@@ -46,6 +46,12 @@ public class PlacementSystem : MonoBehaviour
 
     private void HandleBlockSelection()
     {
+        if (GameStateManager.Instance != null && GameStateManager.Instance.currentState != GameState.Playing)
+        {
+            HidePreview();
+            return;
+        }
+
         if (queueManager == null) return;
 
         if (Input.GetKeyDown(KeyCode.Alpha1)) queueManager.SelectBlock(0);
@@ -55,6 +61,12 @@ public class PlacementSystem : MonoBehaviour
 
     private void HandleRotation()
     {
+        if (GameStateManager.Instance != null && GameStateManager.Instance.currentState != GameState.Playing)
+        {
+            HidePreview();
+            return;
+        }
+
         if (blockPrefab != null && Input.GetKeyDown(KeyCode.Space))
         {
             currentRotation += 90f;
@@ -68,6 +80,12 @@ public class PlacementSystem : MonoBehaviour
 
     private void DetectAndPlace()
     {
+        if (GameStateManager.Instance != null && GameStateManager.Instance.currentState != GameState.Playing)
+        {
+            HidePreview();
+            return;
+        }
+
         if (EventSystem.current.IsPointerOverGameObject() || blockPrefab == null || currentGlobalStock <= 0)
         {
             HidePreview();
@@ -187,6 +205,17 @@ public class PlacementSystem : MonoBehaviour
         if (clusterManager != null) clusterManager.CalculateClusters();
         if (scoreManager != null) scoreManager.CalculateScore();
         if (virusManager != null) virusManager.NeutralizeVirus();
+
+        if (queueManager != null)
+        {
+            List<GameObject> currentCards = queueManager.GetCurrentAvailableBlocks();
+            bool isGameOver = CheckForGameOver(currentCards);
+            
+            if (isGameOver)
+            {
+                GameStateManager.Instance.ChangeState(GameState.GameOver);
+            }
+        }
     }
 
     private void UpdatePreviewUI()
@@ -199,5 +228,54 @@ public class PlacementSystem : MonoBehaviour
             totalStockText.text = displayStock.ToString();
             totalStockText.color = displayStock <= 0 ? Color.red : Color.white;
         }
+    }
+
+    private bool CheckForGameOver(List<GameObject> availableBlockPrefabs)
+    {
+        List<Vector2Int> emptyTiles = new List<Vector2Int>();
+        foreach (Vector2Int floorPos in gridManager.floorGrid.Keys)
+        {
+            if (!gridData.ContainsKey(floorPos))
+            {
+                emptyTiles.Add(floorPos);
+            }
+        }
+
+        foreach (GameObject blockPrefab in availableBlockPrefabs)
+        {
+            if (blockPrefab == null) continue;
+            
+            BlockData blockData = blockPrefab.GetComponent<BlockData>();
+            if (blockData == null) continue;
+
+            float[] rotations = { 0f, 90f, 180f, 270f };
+            foreach (float rot in rotations)
+            {
+                List<TileOccupancy> rotatedTiles = blockData.GetRotatedTiles(rot);
+                
+                foreach (Vector2Int basePos in emptyTiles)
+                {
+                    bool canPlaceThis = true;
+                    
+                    foreach (TileOccupancy tile in rotatedTiles)
+                    {
+                        Vector2Int checkPos = basePos + tile.position;
+                        
+                        if (gridData.ContainsKey(checkPos) || !gridManager.floorGrid.ContainsKey(checkPos))
+                        {
+                            canPlaceThis = false;
+                            break; 
+                        }
+                    }
+                    
+                    if (canPlaceThis)
+                    {
+                        return false; 
+                    }
+                }
+            }
+        }
+        
+        return true;
     }
 }
