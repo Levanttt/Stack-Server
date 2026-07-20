@@ -39,12 +39,11 @@ public class PlacementSystem : MonoBehaviour
 
     private void Update()
     {
-        HandleBlockSelection(); // BUG FIX: Mengembalikan fungsi tombol 1, 2, 3
+        HandleBlockSelection();
         HandleRotation();
         DetectAndPlace();
     }
 
-    // BUG FIX: Fungsi shortcut keyboard diaktifkan kembali
     private void HandleBlockSelection()
     {
         if (queueManager == null) return;
@@ -56,7 +55,6 @@ public class PlacementSystem : MonoBehaviour
 
     private void HandleRotation()
     {
-        // FITUR BARU: Menggunakan tombol Spasi
         if (blockPrefab != null && Input.GetKeyDown(KeyCode.Space))
         {
             currentRotation += 90f;
@@ -99,9 +97,7 @@ public class PlacementSystem : MonoBehaviour
             {
                 Vector2Int worldGridPos = baseGridPos + tile.position;
 
-                if (gridData.ContainsKey(worldGridPos) || 
-                    worldGridPos.x < 0 || worldGridPos.x >= 10 || 
-                    worldGridPos.y < 0 || worldGridPos.y >= 10)
+                if (gridData.ContainsKey(worldGridPos) || !gridManager.floorGrid.ContainsKey(worldGridPos))
                 {
                     canPlace = false;
                     break;
@@ -132,13 +128,11 @@ public class PlacementSystem : MonoBehaviour
         if (previewObject != null) Destroy(previewObject);
         if (blockPrefab == null) return;
 
-        // BUG FIX: Reset rotasi setiap kali memegang blok baru agar logika dan visual sinkron
         currentRotation = 0f; 
 
         previewObject = Instantiate(blockPrefab);
         previewObject.name = "BlockPreview_Hologram";
         
-        // Terapkan rotasi awal ke hologram
         previewObject.transform.rotation = Quaternion.Euler(0, currentRotation, 0);
 
         Destroy(previewObject.GetComponent<BlockData>());
