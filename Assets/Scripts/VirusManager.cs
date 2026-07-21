@@ -57,4 +57,53 @@ public class VirusManager : MonoBehaviour
             r.material.DisableKeyword("_EMISSION"); 
         }
     }
+
+    public void UpdateInfectionVisuals()
+    {
+        if (gridManager == null) return;
+
+        // 1. Reset: Matikan semua ikon peringatan di lantai
+        foreach (var kvp in gridManager.gridMap)
+        {
+            if (kvp.Value.tileObject != null)
+            {
+                TileVFX vfx = kvp.Value.tileObject.GetComponentInChildren<TileVFX>();
+                if (vfx != null) vfx.SetInfectedVisual(false);
+            }
+        }
+
+        // 2. Cari semua Malware yang MASIH AKTIF
+        Vector2Int[] dirs8 = { 
+            Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right,
+            new Vector2Int(1, 1), new Vector2Int(1, -1), new Vector2Int(-1, 1), new Vector2Int(-1, -1)
+        };
+
+        foreach (var kvp in gridManager.gridMap)
+        {
+            if (kvp.Value.type == GridTileType.Malware && !kvp.Value.isNeutralized)
+            {
+                // 3. Nyalakan ikon di 8 blok sekitarnya!
+                foreach (Vector2Int dir in dirs8)
+                {
+                    Vector2Int neighborPos = kvp.Key + dir;
+                    
+                    if (gridManager.gridMap.TryGetValue(neighborPos, out TileData neighborTile))
+                    {
+                        // Jangan kasih ikon warning ke Malware itu sendiri atau ke Firewall
+                        if (neighborTile.type != GridTileType.Malware && neighborTile.type != GridTileType.Firewall)
+                        {
+                            if (neighborTile.tileObject != null)
+                            {
+                                TileVFX neighborVFX = neighborTile.tileObject.GetComponentInChildren<TileVFX>();
+                                if (neighborVFX != null)
+                                {
+                                    neighborVFX.SetInfectedVisual(true); // Pop-up ikonnya!
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

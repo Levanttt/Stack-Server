@@ -273,7 +273,11 @@ public class PlacementSystem : MonoBehaviour
         }
 
         if (clusterManager != null) clusterManager.CalculateClusters();
-        if (virusManager != null) virusManager.NeutralizeVirus();
+        if (virusManager != null) 
+        {
+            virusManager.NeutralizeVirus(); 
+            virusManager.UpdateInfectionVisuals(); 
+        }
         if (scoreManager != null) scoreManager.CalculateScore();
         if (queueManager != null) queueManager.OnBlockPlacedSuccessfully();
 

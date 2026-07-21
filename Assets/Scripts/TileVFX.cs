@@ -31,7 +31,7 @@ public class TileVFX : MonoBehaviour
 
     public void SetOverheatStatus(bool state)
     {
-        if (isOverheating == state) return; // Mencegah perintah yang sama dipanggil berulang-ulang
+        if (isOverheating == state) return; 
         
         isOverheating = state;
 
