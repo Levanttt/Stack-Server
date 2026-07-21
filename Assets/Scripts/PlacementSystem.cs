@@ -183,7 +183,7 @@ public class PlacementSystem : MonoBehaviour
 
     private void PlaceBlock(Vector2Int baseGridPos, List<TileOccupancy> rotatedTiles)
     {
-        Vector3 spawnPos = new Vector3(baseGridPos.x * cellSize, 0.1f, baseGridPos.y * cellSize);
+        Vector3 spawnPos = new Vector3(baseGridPos.x * cellSize, 0.05f, baseGridPos.y * cellSize);
         GameObject newBlock = Instantiate(blockPrefab, spawnPos, Quaternion.Euler(0, currentRotation, 0));
 
         BlockData data = newBlock.GetComponent<BlockData>();

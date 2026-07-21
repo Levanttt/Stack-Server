@@ -1127,7 +1127,7 @@ MonoBehaviour:
   minY: 0
   maxY: 4
   cellSize: 1
-  floorTilePrefab: {fileID: 6845397153108933539, guid: 996b409a74f0aa049aa6a20c85f17b31,
+  floorTilePrefab: {fileID: 1194238381253747403, guid: b69d498d6205dd24392424823bd60c01,
     type: 3}
   floorContainer: {fileID: 1388119130}
   cameraTargetObject: {fileID: 1019976638}
