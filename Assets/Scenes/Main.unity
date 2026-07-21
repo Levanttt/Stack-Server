@@ -2045,8 +2045,9 @@ MonoBehaviour:
   scorePerCableAdjacent: 5
   scorePerDatabaseAdjacent: 10
   baseScorePerDatabaseInCluster: 20
-  milestoneTiers: 640000002c01000026020000
-  infiniteMilestoneStep: 2500
+  scoreFirewallPlacement: 10
+  scoreNeutralizedMalware: 50
+  penaltyOverheat: 20
   totalScore: 0
 --- !u!4 &1674445489
 Transform:
@@ -2627,6 +2628,7 @@ GameObject:
   - component: {fileID: 2064101057}
   - component: {fileID: 2064101060}
   - component: {fileID: 2064101059}
+  - component: {fileID: 2064101061}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -2658,8 +2660,6 @@ MonoBehaviour:
   cellSize: 1
   validMaterial: {fileID: 2100000, guid: 231fabaeccd915346b8477c13c484dd1, type: 2}
   invalidMaterial: {fileID: 2100000, guid: 65ae606fbc397a3408428db2f8ca628c, type: 2}
-  currentGlobalStock: 15
-  totalStockText: {fileID: 1893894604}
 --- !u!4 &2064101058
 Transform:
   m_ObjectHideFlags: 0
@@ -2688,8 +2688,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gridManager: {fileID: 734200713}
-  baseHeatTolerance: 2
-  coolingPowerPerAC: 3
+  baseHeatTolerance: 3
+  coolingPowerPerAC: 2
   activeClusters: []
 --- !u!114 &2064101060
 MonoBehaviour:
@@ -2703,23 +2703,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3cf6d6958a940c4fa684c076fe07f1c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  availableBlocks:
-  - {fileID: 1723576140274917757, guid: ce9e785bb804d224e92c2455d784d0a2, type: 3}
-  - {fileID: 1723576140274917757, guid: 74467c6d0f6eca84eae5b894223ed9f8, type: 3}
-  - {fileID: 1376902680588011853, guid: 0bcc0cf0ba717b8488a496d14f19b495, type: 3}
-  - {fileID: 201424001887965414, guid: da53724cf78c78b4a8ad0dca4d8d38de, type: 3}
-  - {fileID: 1391990568717930652, guid: a54e97e0566f0904d9c12ce7d9d4c074, type: 3}
-  - {fileID: 9089230910911309571, guid: 49d46228162b91b4386d72b9d43ba526, type: 3}
-  - {fileID: 6817184857925451406, guid: 95eef6d3fa59d4f4fa4d692b6a67a07a, type: 3}
-  - {fileID: 5992857893466628123, guid: fc6e1e939d470424a8a0d425a2ae0c31, type: 3}
-  - {fileID: 5310130343297212643, guid: 8457fa0ddd6bdc94aa349772993a07c0, type: 3}
-  - {fileID: 3422012001428986367, guid: c245160a1d4d8f547afb04ff9392c17d, type: 3}
-  - {fileID: 1784623558766370340, guid: 2db785bf8c715054882b7338a931bdf8, type: 3}
-  - {fileID: 984611409674777683, guid: 6c9f281807da8cd4e9f53867283775c4, type: 3}
-  - {fileID: 2691576003490591255, guid: 1f43e8019e0e6634d812aef809b86d87, type: 3}
-  - {fileID: 5557085771581086403, guid: 0ac693906b75ec949b0a4ab7c4949a8d, type: 3}
-  - {fileID: 9061752124628261919, guid: cf4ab7e56645607429483af99cfa2a04, type: 3}
-  deckCapacity: 15
+  unlockTiers:
+  - unlockAtMilestoneLevel: 0
+    blockPrefabs:
+    - {fileID: 2563415791150352903, guid: 309c1d9eafaa8ef47b5fb10c7184e938, type: 3}
+    - {fileID: 1723576140274917757, guid: ce9e785bb804d224e92c2455d784d0a2, type: 3}
+    - {fileID: 1723576140274917757, guid: 74467c6d0f6eca84eae5b894223ed9f8, type: 3}
+  - unlockAtMilestoneLevel: 3
+    blockPrefabs:
+    - {fileID: 1376902680588011853, guid: 0bcc0cf0ba717b8488a496d14f19b495, type: 3}
+    - {fileID: 1391990568717930652, guid: a54e97e0566f0904d9c12ce7d9d4c074, type: 3}
+  - unlockAtMilestoneLevel: 5
+    blockPrefabs:
+    - {fileID: 9089230910911309571, guid: 49d46228162b91b4386d72b9d43ba526, type: 3}
+    - {fileID: 5310130343297212643, guid: 8457fa0ddd6bdc94aa349772993a07c0, type: 3}
+  - unlockAtMilestoneLevel: 7
+    blockPrefabs:
+    - {fileID: 5992857893466628123, guid: fc6e1e939d470424a8a0d425a2ae0c31, type: 3}
+    - {fileID: 3422012001428986367, guid: c245160a1d4d8f547afb04ff9392c17d, type: 3}
+    - {fileID: 6817184857925451406, guid: 95eef6d3fa59d4f4fa4d692b6a67a07a, type: 3}
+  - unlockAtMilestoneLevel: 10
+    blockPrefabs:
+    - {fileID: 984611409674777683, guid: 6c9f281807da8cd4e9f53867283775c4, type: 3}
+    - {fileID: 1784623558766370340, guid: 2db785bf8c715054882b7338a931bdf8, type: 3}
+    - {fileID: 5557085771581086403, guid: 0ac693906b75ec949b0a4ab7c4949a8d, type: 3}
+  - unlockAtMilestoneLevel: 12
+    blockPrefabs:
+    - {fileID: 2691576003490591255, guid: 1f43e8019e0e6634d812aef809b86d87, type: 3}
+    - {fileID: 9061752124628261919, guid: cf4ab7e56645607429483af99cfa2a04, type: 3}
+  initialDeckCapacity: 6
+  baseRewardStock: 4
+  rewardIncrementPerLevel: 1
   activeHand:
   - {fileID: 0}
   - {fileID: 0}
@@ -2729,7 +2743,23 @@ MonoBehaviour:
   - {fileID: 1307472901}
   - {fileID: 672570909}
   - {fileID: 1269864333}
+  totalStockText: {fileID: 1893894604}
   placementSystem: {fileID: 2064101057}
+--- !u!114 &2064101061
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2064101056}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 681bcea8bb9c92d4d80588b0b49bfff4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  milestoneTiers: 640000002c01000058020000e8030000dc05000034080000
+  baseInfiniteStep: 1000
+  infiniteStepMultiplier: 1.25
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

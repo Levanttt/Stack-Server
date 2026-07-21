@@ -5,8 +5,7 @@ using UnityEngine;
 public class ClusterData
 {
     public int clusterID;
-    public int totalDatabase; // Jumlah murni database
-    public int totalCoolingPower; // Total daya pendingin dari AC
+    public int totalDatabase; 
     public List<Vector2Int> tiles = new List<Vector2Int>();
 }
 
@@ -16,11 +15,8 @@ public class ClusterManager : MonoBehaviour
     public GridManager gridManager;
 
     [Header("Cluster Rules")]
-    [Tooltip("Jumlah batas maksimal Database berdempetan sebelum OVERHEAT (tanpa AC)")]
-    public int baseHeatTolerance = 2; 
-    
-    [Tooltip("Satu kotak AC/Cooling bisa menahan berapa Database tambahan?")]
-    public int coolingPowerPerAC = 3;
+    public int baseHeatTolerance = 2; // Batas aman bawaan tanpa AC
+    public int coolingPowerPerAC = 3; // Kuota hawa dingin per AC
 
     [Header("Cluster Info")]
     public List<ClusterData> activeClusters = new List<ClusterData>();
@@ -31,40 +27,131 @@ public class ClusterManager : MonoBehaviour
         HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
         int currentClusterID = 1;
 
+        // 1. CARI SEMUA KELOMPOK DATABASE
         foreach (var kvp in gridManager.gridMap)
         {
             Vector2Int pos = kvp.Key;
             TileData tile = kvp.Value;
 
-            if ((tile.type == GridTileType.Database || tile.type == GridTileType.Cooling) && !visited.Contains(pos))
+            if (tile.type == GridTileType.Database && !visited.Contains(pos))
             {
                 ClusterData newCluster = new ClusterData { clusterID = currentClusterID };
-                
-                FloodFill(pos, visited, newCluster);
-                
+                FloodFillDBOnly(pos, visited, newCluster);
                 activeClusters.Add(newCluster);
                 currentClusterID++;
             }
         }
 
-        // --- BAGIAN DEBUG LOG YANG DIPERBARUI ---
+        Vector2Int[] dirs = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
+
+        // 2. SIMULASI ALIRAN HAWA DINGIN (THERMAL FLOW)
         foreach (var cluster in activeClusters)
         {
-            int maxSafeCapacity = baseHeatTolerance + cluster.totalCoolingPower;
-            bool isOverheat = cluster.totalDatabase > maxSafeCapacity;
-            string status = isOverheat ? "OVERHEAT! Butuh AC!" : "Aman & Stabil";
-
-            string koordinat = "";
-            foreach(Vector2Int p in cluster.tiles) {
-                koordinat += $"({p.x}, {p.y}) ";
+            // Jika sejak awal kelompoknya kecil, aman semua!
+            if (cluster.totalDatabase <= baseHeatTolerance)
+            {
+                SetClusterOverheatState(cluster, new HashSet<Vector2Int>()); // Kosong = aman semua
+                continue;
             }
 
-            // Sekarang status daya AC-nya ikut diprint ke Console!
-            Debug.Log($"Cluster {cluster.clusterID} | DB: {cluster.totalDatabase} | Daya AC: {cluster.totalCoolingPower} | Max Aman: {maxSafeCapacity} | Status: {status} | Posisi: {koordinat}");
+            // Cari semua AC yang nempel dengan kelompok ini
+            HashSet<Vector2Int> attachedACs = new HashSet<Vector2Int>();
+            foreach (Vector2Int p in cluster.tiles) 
+            {
+                foreach (Vector2Int d in dirs)
+                {
+                    Vector2Int neighborPos = p + d;
+                    if (gridManager.gridMap.ContainsKey(neighborPos) && gridManager.gridMap[neighborPos].type == GridTileType.Cooling)
+                    {
+                        attachedACs.Add(neighborPos); 
+                    }
+                }
+            }
+
+            // Jika kelompok berlebih tapi TIDAK ADA AC sama sekali, semuanya merah!
+            if (attachedACs.Count == 0)
+            {
+                SetClusterOverheatState(cluster, new HashSet<Vector2Int>(cluster.tiles)); // Semua masuk daftar overheat
+                continue;
+            }
+
+            // --- ALGORITMA PENYEBARAN DINGIN ---
+            int coolingQuota = baseHeatTolerance + (attachedACs.Count * coolingPowerPerAC);
+            HashSet<Vector2Int> safeTiles = new HashSet<Vector2Int>(); // Daftar server yang selamat
+            Queue<Vector2Int> queue = new Queue<Vector2Int>(); // Antrean penyebaran
+
+            // Mulai dari server yang menempel langsung dengan AC
+            foreach (Vector2Int acPos in attachedACs)
+            {
+                foreach (Vector2Int d in dirs)
+                {
+                    Vector2Int neighbor = acPos + d;
+                    if (cluster.tiles.Contains(neighbor) && !safeTiles.Contains(neighbor))
+                    {
+                        if (coolingQuota > 0) 
+                        {
+                            safeTiles.Add(neighbor);
+                            queue.Enqueue(neighbor);
+                            coolingQuota--; // Kuota berkurang 1
+                        }
+                    }
+                }
+            }
+
+            // Sebarkan dinginnya ke tetangga server secara merata sampai kuota habis
+            while (queue.Count > 0 && coolingQuota > 0)
+            {
+                Vector2Int curr = queue.Dequeue();
+                foreach (Vector2Int d in dirs)
+                {
+                    Vector2Int neighbor = curr + d;
+                    if (cluster.tiles.Contains(neighbor) && !safeTiles.Contains(neighbor))
+                    {
+                        if (coolingQuota > 0)
+                        {
+                            safeTiles.Add(neighbor);
+                            queue.Enqueue(neighbor);
+                            coolingQuota--; // Kuota berkurang 1
+                        }
+                    }
+                }
+            }
+
+            // Tentukan server mana yang tidak kebagian kuota dingin (Overheat)
+            HashSet<Vector2Int> overheatedTiles = new HashSet<Vector2Int>();
+            foreach (Vector2Int p in cluster.tiles)
+            {
+                if (!safeTiles.Contains(p)) 
+                {
+                    overheatedTiles.Add(p); // Ini yang ada di ujung dan kepanasan!
+                }
+            }
+
+            // Eksekusi visualnya
+            SetClusterOverheatState(cluster, overheatedTiles);
         }
     }
 
-    private void FloodFill(Vector2Int startPos, HashSet<Vector2Int> visited, ClusterData cluster)
+    // Fungsi pembantu untuk memicu lampu merah per kotak
+    private void SetClusterOverheatState(ClusterData cluster, HashSet<Vector2Int> overheatedTiles)
+    {
+        foreach (Vector2Int p in cluster.tiles)
+        {
+            bool isOverheat = overheatedTiles.Contains(p);
+            TileData tileData = gridManager.gridMap[p];
+            
+            if (tileData.tileObject != null)
+            {
+                TileVFX[] vfxList = tileData.tileObject.GetComponentsInChildren<TileVFX>();
+                foreach (TileVFX vfx in vfxList)
+                {
+                    vfx.SetOverheatStatus(isOverheat);
+                }
+            }
+        }
+    }
+
+    private void FloodFillDBOnly(Vector2Int startPos, HashSet<Vector2Int> visited, ClusterData cluster)
     {
         Queue<Vector2Int> queue = new Queue<Vector2Int>();
         queue.Enqueue(startPos);
@@ -76,22 +163,14 @@ public class ClusterManager : MonoBehaviour
         {
             Vector2Int currentPos = queue.Dequeue();
             cluster.tiles.Add(currentPos);
-
-            TileData currentTile = gridManager.gridMap[currentPos];
-            
-            // Hitung jumlah DB dan kekuatan AC
-            if (currentTile.type == GridTileType.Database) cluster.totalDatabase += 1;
-            if (currentTile.type == GridTileType.Cooling) cluster.totalCoolingPower += coolingPowerPerAC;
+            cluster.totalDatabase += 1;
 
             foreach (Vector2Int d in dirs)
             {
                 Vector2Int neighborPos = currentPos + d;
-
                 if (!visited.Contains(neighborPos) && gridManager.gridMap.ContainsKey(neighborPos))
                 {
-                    TileData neighborTile = gridManager.gridMap[neighborPos];
-                    
-                    if (neighborTile.type == GridTileType.Database || neighborTile.type == GridTileType.Cooling)
+                    if (gridManager.gridMap[neighborPos].type == GridTileType.Database)
                     {
                         visited.Add(neighborPos);
                         queue.Enqueue(neighborPos);
