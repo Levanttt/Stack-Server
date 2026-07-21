@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
+using System.Collections; 
 
 public class UIManager : MonoBehaviour
 {
@@ -9,16 +10,32 @@ public class UIManager : MonoBehaviour
 
     [Header("HUD Score UI")]
     public Image radialScoreFill;
-    public TextMeshProUGUI scoreValueText; // Text kiri (e.g., 257)
-    public TextMeshProUGUI scoreMaxText;   // Text kanan (e.g., /320)
+    public TextMeshProUGUI scoreValueText; 
+    public TextMeshProUGUI scoreMaxText;   
+
+    [Header("Dynamic Font Scaling")]
+    public float valueBaseSize = 32f;
+    public float maxBaseSize = 28f;
+    public int safeCharacterLimit = 4;       // Batas aman huruf sebelum mulai dikecilkan
+    public float sizeReductionPerChar = 2f;  // Turun 2 poin tiap nambah 1 huruf ekstra
     
+    [Header("Animation Settings")]
+    public float fillAnimationSpeed = 5f;
+    public Color milestoneFlashColor = new Color(0.4f, 0.95f, 1f, 1f); 
+
     [Header("Game Over UI")]
     public GameObject gameOverPanel;
     public TextMeshProUGUI finalScoreText;
     public TextMeshProUGUI highScoreText;
 
     private float targetFillAmount = 0f;
-    private float fillAnimationSpeed = 5f;
+    private int lastMilestoneScore = 0;
+    private bool isWrappingAround = false;
+
+    private Vector3 originalTextScale;
+    private Vector3 originalMaxTextScale;
+    private Color originalFillColor;
+    private Coroutine celebrationCoroutine;
 
     private void Awake()
     {
@@ -26,48 +43,134 @@ public class UIManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
+    private void Start()
+    {
+        if (scoreValueText != null) 
+        {
+            originalTextScale = scoreValueText.transform.localScale;
+            scoreValueText.fontSize = valueBaseSize;
+        }
+        if (scoreMaxText != null) 
+        {
+            originalMaxTextScale = scoreMaxText.transform.localScale;
+            scoreMaxText.fontSize = maxBaseSize;
+        }
+        if (radialScoreFill != null) originalFillColor = radialScoreFill.color;
+    }
+
     private void Update()
     {
-        // Animasi halus untuk radial bar
-        if (radialScoreFill != null && radialScoreFill.fillAmount != targetFillAmount)
+        if (radialScoreFill != null)
         {
-            radialScoreFill.fillAmount = Mathf.Lerp(radialScoreFill.fillAmount, targetFillAmount, Time.deltaTime * fillAnimationSpeed);
+            if (isWrappingAround)
+            {
+                radialScoreFill.fillAmount = Mathf.Lerp(radialScoreFill.fillAmount, 1.05f, Time.deltaTime * fillAnimationSpeed * 1.5f);
+                
+                if (radialScoreFill.fillAmount >= 1f)
+                {
+                    radialScoreFill.fillAmount = 0f; 
+                    isWrappingAround = false; 
+                }
+            }
+            else if (radialScoreFill.fillAmount != targetFillAmount)
+            {
+                radialScoreFill.fillAmount = Mathf.Lerp(radialScoreFill.fillAmount, targetFillAmount, Time.deltaTime * fillAnimationSpeed);
+            }
         }
+    }
+
+    private string FormatScore(int score)
+    {
+        if (score >= 1000000)
+            return (score / 1000000f).ToString("0.#") + "M"; 
+        if (score >= 10000)
+            return (score / 1000f).ToString("0.#") + "K";    
+            
+        return score.ToString(); 
     }
 
     public void UpdateHUDScore(int currentScore, int targetMilestoneScore)
     {
-        if (scoreValueText != null) scoreValueText.text = currentScore.ToString();
-        if (scoreMaxText != null) scoreMaxText.text = "/" + targetMilestoneScore.ToString();
+        string formattedCurrent = FormatScore(currentScore);
+        string formattedTarget = FormatScore(targetMilestoneScore);
 
+        if (scoreValueText != null) scoreValueText.text = formattedCurrent;
+        if (scoreMaxText != null) scoreMaxText.text = formattedTarget;
+
+        // --- LOGIKA DYNAMIC FONT SCALING ---
+        int maxCharLength = Mathf.Max(formattedCurrent.Length, formattedTarget.Length);
+        int reductionSteps = Mathf.Max(0, maxCharLength - safeCharacterLimit);
+
+        if (scoreValueText != null) 
+            scoreValueText.fontSize = valueBaseSize - (reductionSteps * sizeReductionPerChar);
+        if (scoreMaxText != null) 
+            scoreMaxText.fontSize = maxBaseSize - (reductionSteps * sizeReductionPerChar);
+
+        // --- LOGIKA RADIAL & ANIMASI ---
         if (radialScoreFill != null && targetMilestoneScore > 0)
         {
+            if (lastMilestoneScore != 0 && targetMilestoneScore > lastMilestoneScore)
+            {
+                isWrappingAround = true;
+                
+                if (celebrationCoroutine != null) StopCoroutine(celebrationCoroutine);
+                celebrationCoroutine = StartCoroutine(CelebrateMilestoneRoutine());
+            }
+            
+            lastMilestoneScore = targetMilestoneScore;
             targetFillAmount = (float)currentScore / targetMilestoneScore;
         }
     }
 
-    public void ShowGameOverPanel(int finalScore)
+    private IEnumerator CelebrateMilestoneRoutine()
     {
-        if (gameOverPanel == null)
+        float duration = 0.4f; 
+        float elapsed = 0f;
+
+        if (radialScoreFill != null) radialScoreFill.color = milestoneFlashColor;
+
+        while (elapsed < duration)
         {
-            Debug.Log("Panel Game Over belum dibuat, skip UI.");
-            return;
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            float bounceEffect = Mathf.Sin(t * Mathf.PI);
+            float currentScale = 1f + (bounceEffect * 0.5f); 
+            
+            if (scoreValueText != null) 
+            {
+                scoreValueText.transform.localScale = originalTextScale * currentScale;
+            }
+            if (scoreMaxText != null) 
+            {
+                scoreMaxText.transform.localScale = originalMaxTextScale * currentScale;
+            }
+
+            if (radialScoreFill != null)
+            {
+                radialScoreFill.color = Color.Lerp(milestoneFlashColor, originalFillColor, t);
+            }
+
+            yield return null;
         }
 
-        gameOverPanel.SetActive(true);
-        
-        if (finalScoreText != null) 
-            finalScoreText.text = "Score: " + finalScore.ToString();
+        if (scoreValueText != null) scoreValueText.transform.localScale = originalTextScale;
+        if (scoreMaxText != null) scoreMaxText.transform.localScale = originalMaxTextScale;
+        if (radialScoreFill != null) radialScoreFill.color = originalFillColor;
+    }
 
+    public void ShowGameOverPanel(int finalScore)
+    {
+        if (gameOverPanel == null) return;
+        gameOverPanel.SetActive(true);
+        if (finalScoreText != null) finalScoreText.text = "Score: " + finalScore.ToString(); 
         int highScore = PlayerPrefs.GetInt("HighScore", 0);
         if (finalScore > highScore)
         {
             PlayerPrefs.SetInt("HighScore", finalScore);
             highScore = finalScore;
         }
-        
-        if (highScoreText != null) 
-            highScoreText.text = "Best: " + highScore.ToString();
+        if (highScoreText != null) highScoreText.text = "Best: " + highScore.ToString();
     }
 
     public void RestartGame()

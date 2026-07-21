@@ -14,10 +14,28 @@ public class ScoreManager : MonoBehaviour
     public int scorePerCableAdjacent = 5; 
     public int scorePerDatabaseAdjacent = 10;
     public int baseScorePerDatabaseInCluster = 20;
-    public int targetMilestoneScore = 320; // Tambahkan ini sebagai target
+
+    [Header("Milestone Settings")]
+    // Fase Awal: Target yang diatur manual
+    public List<int> milestoneTiers = new List<int> { 320, 800, 1500, 3000, 5000 };
+    
+    // Fase Endless: Penambahan target otomatis kalau list di atas sudah habis
+    public int infiniteMilestoneStep = 2500; 
+
+    private int currentMilestoneIndex = 0;
+    private int currentTargetMilestone;
 
     [Header("Live Score")]
     public int totalScore = 0;
+
+    private void Start()
+    {
+        // Set target pertama saat game mulai
+        if (milestoneTiers.Count > 0)
+            currentTargetMilestone = milestoneTiers[0];
+        else
+            currentTargetMilestone = infiniteMilestoneStep;
+    }
 
     private bool IsCable(GridTileType type)
     {
@@ -119,13 +137,70 @@ public class ScoreManager : MonoBehaviour
         }
 
         totalScore = localPlacementScore + connectionScore;
-        
-        // Integrasi UI: Kirim update ke UIManager
+
+        // LOGIKA ENDLESS MILESTONE
+        while (totalScore >= currentTargetMilestone)
+        {
+            currentMilestoneIndex++;
+            
+            // Cek apakah masih dalam batas List manual
+            if (currentMilestoneIndex < milestoneTiers.Count)
+            {
+                currentTargetMilestone = milestoneTiers[currentMilestoneIndex];
+            }
+            else
+            {
+                // Mode Endless: Tambahkan secara flat (misal +2500) ke target sebelumnya
+                currentTargetMilestone += infiniteMilestoneStep;
+            }
+
+            Debug.Log($"[LEVEL UP] Milestone ke-{currentMilestoneIndex} Tercapai! Target baru: {currentTargetMilestone}");
+            
+            // --- EKSEKUSI REWARD LEVEL UP DI SINI ---
+            // Nanti kamu bisa panggil fungsi tambah stock dan expand grid di sini
+            TriggerMilestoneRewards();
+        }
+
         if (UIManager.Instance != null)
         {
-            UIManager.Instance.UpdateHUDScore(totalScore, targetMilestoneScore);
+            UIManager.Instance.UpdateHUDScore(totalScore, currentTargetMilestone);
         }
 
         Debug.Log($"[SCORE UPDATE] TOTAL: {totalScore}");
+    }
+
+    // Fungsi khusus untuk menampung efek setelah mencapai milestone
+    private void TriggerMilestoneRewards()
+    {
+        // Contoh pemanggilan (uncomment kalau scriptnya sudah siap):
+        
+        /*
+        PlacementSystem placement = FindObjectOfType<PlacementSystem>();
+        if (placement != null)
+        {
+            placement.currentGlobalStock += 5; // Nambah stok block
+        }
+
+        if (gridManager != null)
+        {
+            gridManager.ExpandGrid(1); // Perluas grid 1 tile ke segala arah
+        }
+        */
+    }
+
+    public void ResetScore()
+    {
+        totalScore = 0;
+        currentMilestoneIndex = 0;
+        
+        if (milestoneTiers.Count > 0)
+            currentTargetMilestone = milestoneTiers[0];
+        else
+            currentTargetMilestone = infiniteMilestoneStep;
+
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateHUDScore(totalScore, currentTargetMilestone);
+        }
     }
 }
