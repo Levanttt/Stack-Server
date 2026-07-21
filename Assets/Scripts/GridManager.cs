@@ -84,8 +84,8 @@ public class GridManager : MonoBehaviour
     {
         // 1. Tentukan jumlah arah ekspansi berdasarkan Milestone
         // Milestone 1-2 = 1 arah. Milestone 3-4 = bisa 2 arah, dst.
-        int maxDirections = Mathf.Clamp(1 + (currentMilestone / 2), 1, 4);
-        int directionsCount = Random.Range(1, maxDirections + 1);
+        int maxDirections = Mathf.Clamp(2 + (currentMilestone / 2), 2, 4);
+        int directionsCount = Random.Range(2, maxDirections + 1);
 
         List<ExpansionDirection> allDirs = new List<ExpansionDirection> {
             ExpansionDirection.North, ExpansionDirection.South,
