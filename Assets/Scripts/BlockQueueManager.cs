@@ -18,7 +18,6 @@ public class BlockQueueManager : MonoBehaviour
     [Header("UI References")]
     [Tooltip("Masukkan Card_1, Card_2, Card_3 yang ada komponen Image-nya")]
     public Image[] slotImages = new Image[3]; 
-    // emptySlotSprite sudah dihapus sesuai permintaan
 
     [Header("References")]
     public PlacementSystem placementSystem;
@@ -41,10 +40,8 @@ public class BlockQueueManager : MonoBehaviour
 
     public void RefillHand()
     {
-        // 1. Geser kartu yang tersisa maju ke depan untuk menutup celah kosong (Shift)
         ShiftHandLeft();
 
-        // 2. Tarik kartu baru dari deck untuk mengisi slot kosong di ujung (jika masih ada)
         for (int i = 0; i < activeHand.Length; i++)
         {
             if (activeHand[i] == null && currentDeck.Count > 0)
@@ -52,12 +49,10 @@ public class BlockQueueManager : MonoBehaviour
                 activeHand[i] = currentDeck.Dequeue(); 
             }
             
-            // 3. Update gambar UI
             UpdateSlotUI(i);
         }
     }
 
-    // Fungsi baru untuk menggeser kartu
     private void ShiftHandLeft()
     {
         int targetIndex = 0;
@@ -67,8 +62,8 @@ public class BlockQueueManager : MonoBehaviour
             {
                 if (i != targetIndex)
                 {
-                    activeHand[targetIndex] = activeHand[i]; // Pindah ke slot kosong di depannya
-                    activeHand[i] = null; // Kosongkan slot yang lama
+                    activeHand[targetIndex] = activeHand[i]; 
+                    activeHand[i] = null; 
                 }
                 targetIndex++;
             }
@@ -85,12 +80,11 @@ public class BlockQueueManager : MonoBehaviour
                 if (data != null && data.blockIcon != null)
                 {
                     slotImages[slotIndex].sprite = data.blockIcon;
-                    slotImages[slotIndex].color = Color.white; // Tampilkan dengan jelas
+                    slotImages[slotIndex].color = Color.white; 
                 }
             }
             else
             {
-                // Jika benar-benar habis, buat transparan / tak terlihat
                 slotImages[slotIndex].sprite = null;
                 slotImages[slotIndex].color = new Color(1, 1, 1, 0f); 
             }
@@ -115,7 +109,20 @@ public class BlockQueueManager : MonoBehaviour
             currentSelectedSlot = -1;
             placementSystem.blockPrefab = null;
             
-            RefillHand(); // Ini otomatis memicu geser kartu lalu menarik kartu baru
+            RefillHand(); 
         }
+    }
+
+    public List<GameObject> GetCurrentAvailableBlocks()
+    {
+        List<GameObject> currentBlocks = new List<GameObject>();
+        for (int i = 0; i < activeHand.Length; i++)
+        {
+            if (activeHand[i] != null)
+            {
+                currentBlocks.Add(activeHand[i]);
+            }
+        }
+        return currentBlocks;
     }
 }

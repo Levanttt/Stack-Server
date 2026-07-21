@@ -82,7 +82,9 @@ public class GridManager : MonoBehaviour
 
     public void ExpandGridBasedOnProgression()
     {
-        int maxDirections = Mathf.Clamp((currentMilestone / 2) + 1, 1, 4);
+        // 1. Tentukan jumlah arah ekspansi berdasarkan Milestone
+        // Milestone 1-2 = 1 arah. Milestone 3-4 = bisa 2 arah, dst.
+        int maxDirections = Mathf.Clamp(1 + (currentMilestone / 2), 1, 4);
         int directionsCount = Random.Range(1, maxDirections + 1);
 
         List<ExpansionDirection> allDirs = new List<ExpansionDirection> {
@@ -90,6 +92,7 @@ public class GridManager : MonoBehaviour
             ExpansionDirection.East, ExpansionDirection.West
         };
 
+        // Acak arah sisi mana yang akan ditarik
         for (int i = 0; i < allDirs.Count; i++)
         {
             int rnd = Random.Range(i, allDirs.Count);
@@ -98,51 +101,43 @@ public class GridManager : MonoBehaviour
             allDirs[i] = temp;
         }
 
-        List<Vector2Int> newTilesToSpawn = new List<Vector2Int>();
+        // 2. Patokan batas baru
+        int targetMinX = minX;
+        int targetMaxX = maxX;
+        int targetMinY = minY;
+        int targetMaxY = maxY;
 
+        // 3. Selalu tambahkan GARIS PENUH (Full Line) dengan rapi
         for (int i = 0; i < directionsCount; i++)
         {
-            ExpansionDirection dir = allDirs[i];
-            List<Vector2Int> edgeTiles = GetOutermostEdgeTiles(dir);
-
-            if (edgeTiles.Count == 0) continue;
-
-            bool isFullLine = Random.value > 0.4f;
-            int amountToTake = isFullLine ? edgeTiles.Count : Mathf.Max(1, edgeTiles.Count / 2);
-            int startIndex = 0;
-
-            if (!isFullLine && edgeTiles.Count > amountToTake)
+            switch (allDirs[i])
             {
-                startIndex = Random.Range(0, edgeTiles.Count - amountToTake + 1);
-            }
-
-            for (int j = 0; j < amountToTake; j++)
-            {
-                Vector2Int baseTile = edgeTiles[startIndex + j];
-                Vector2Int newPos = baseTile;
-
-                switch (dir)
-                {
-                    case ExpansionDirection.North: newPos.y += 1; break;
-                    case ExpansionDirection.South: newPos.y -= 1; break;
-                    case ExpansionDirection.East:  newPos.x += 1; break;
-                    case ExpansionDirection.West:  newPos.x -= 1; break;
-                }
-
-                if (!floorGrid.ContainsKey(newPos) && !newTilesToSpawn.Contains(newPos))
-                {
-                    newTilesToSpawn.Add(newPos);
-                }
+                case ExpansionDirection.North: targetMaxY += 1; break;
+                case ExpansionDirection.South: targetMinY -= 1; break;
+                case ExpansionDirection.East:  targetMaxX += 1; break;
+                case ExpansionDirection.West:  targetMinX -= 1; break;
             }
         }
 
-        foreach (var pos in newTilesToSpawn)
+        List<Vector2Int> newTilesToSpawn = new List<Vector2Int>();
+
+        for (int x = targetMinX; x < targetMaxX; x++)
         {
-            if (pos.x < minX) minX = pos.x;
-            if (pos.x >= maxX) maxX = pos.x + 1;
-            if (pos.y < minY) minY = pos.y;
-            if (pos.y >= maxY) maxY = pos.y + 1;
+            for (int y = targetMinY; y < targetMaxY; y++)
+            {
+                Vector2Int pos = new Vector2Int(x, y);
+                if (!floorGrid.ContainsKey(pos))
+                {
+                    newTilesToSpawn.Add(pos);
+                }
+            }
         }
+
+        // 4. Terapkan batas area murni yang baru
+        minX = targetMinX;
+        maxX = targetMaxX;
+        minY = targetMinY;
+        maxY = targetMaxY;
 
         if (newTilesToSpawn.Count > 0)
         {

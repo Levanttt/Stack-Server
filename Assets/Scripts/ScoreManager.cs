@@ -15,10 +15,28 @@ public class ScoreManager : MonoBehaviour
     public int scorePerDatabaseAdjacent = 10;
     public int baseScorePerDatabaseInCluster = 20;
 
+    [Header("Milestone Settings")]
+    // Fase Awal: Target yang diatur manual
+    public List<int> milestoneTiers = new List<int> { 320, 800, 1500, 3000, 5000 };
+    
+    // Fase Endless: Penambahan target otomatis kalau list di atas sudah habis
+    public int infiniteMilestoneStep = 2500; 
+
+    private int currentMilestoneIndex = 0;
+    private int currentTargetMilestone;
+
     [Header("Live Score")]
     public int totalScore = 0;
 
-    // Helper untuk ngecek apakah kotak ini termasuk varian kabel
+    private void Start()
+    {
+        // Set target pertama saat game mulai
+        if (milestoneTiers.Count > 0)
+            currentTargetMilestone = milestoneTiers[0];
+        else
+            currentTargetMilestone = infiniteMilestoneStep;
+    }
+
     private bool IsCable(GridTileType type)
     {
         return type == GridTileType.Kabel_I || type == GridTileType.Kabel_L || 
@@ -31,17 +49,14 @@ public class ScoreManager : MonoBehaviour
         int localPlacementScore = 0;
         int connectionScore = 0;
 
-        // 1. HITUNG POIN PENEMPATAN LOKAL (Database, AC, Kabel)
         foreach (var kvp in gridManager.gridMap)
         {
             Vector2Int pos = kvp.Key;
             TileData tile = kvp.Value;
 
-            // Skor Database
             if (tile.type == GridTileType.Database)
             {
                 localPlacementScore += scoreDatabaseSingle; 
-                
                 List<TileData> neighbors = gridManager.GetOrthogonalNeighbors(pos);
                 foreach (TileData neighbor in neighbors)
                 {
@@ -49,12 +64,10 @@ public class ScoreManager : MonoBehaviour
                         localPlacementScore += scoreDatabaseAdjacency;
                 }
             }
-            // Skor AC
             else if (tile.type == GridTileType.Cooling)
             {
                 localPlacementScore += scoreACPlacement;
             }
-            // Skor Kabel
             else if (IsCable(tile.type))
             {
                 List<TileData> neighbors = gridManager.GetOrthogonalNeighbors(pos);
@@ -66,7 +79,6 @@ public class ScoreManager : MonoBehaviour
             }
         }
 
-        // 2. HITUNG POIN MULTIPLIER KONEKSI (BFS Jaringan Kabel)
         Dictionary<Vector2Int, int> tileToClusterID = new Dictionary<Vector2Int, int>();
         foreach (var cluster in clusterManager.activeClusters)
         {
@@ -86,21 +98,17 @@ public class ScoreManager : MonoBehaviour
                 Queue<Vector2Int> queue = new Queue<Vector2Int>();
                 queue.Enqueue(kvp.Key);
                 visitedCables.Add(kvp.Key);
-
                 HashSet<int> connectedClusters = new HashSet<int>();
 
                 while (queue.Count > 0)
                 {
                     Vector2Int currentPos = queue.Dequeue();
-
                     foreach (Vector2Int d in dirs)
                     {
                         Vector2Int neighborPos = currentPos + d;
-                        
                         if (gridManager.gridMap.ContainsKey(neighborPos))
                         {
                             TileData neighborTile = gridManager.gridMap[neighborPos];
-
                             if (IsCable(neighborTile.type) && !visitedCables.Contains(neighborPos))
                             {
                                 visitedCables.Add(neighborPos);
@@ -121,9 +129,7 @@ public class ScoreManager : MonoBehaviour
                     {
                         ClusterData cData = clusterManager.activeClusters.Find(c => c.clusterID == id);
                         if (cData != null)
-                        {
                             combinedClusterScore += (cData.totalDatabase * baseScorePerDatabaseInCluster);
-                        }
                     }
                     connectionScore += (combinedClusterScore * 2);
                 }
@@ -131,32 +137,70 @@ public class ScoreManager : MonoBehaviour
         }
 
         totalScore = localPlacementScore + connectionScore;
-        Debug.Log($"[SCORE UPDATE] Lokal: {localPlacementScore} | Multiplier: {connectionScore} | TOTAL: {totalScore}");
+
+        // LOGIKA ENDLESS MILESTONE
+        while (totalScore >= currentTargetMilestone)
+        {
+            currentMilestoneIndex++;
+            
+            // Cek apakah masih dalam batas List manual
+            if (currentMilestoneIndex < milestoneTiers.Count)
+            {
+                currentTargetMilestone = milestoneTiers[currentMilestoneIndex];
+            }
+            else
+            {
+                // Mode Endless: Tambahkan secara flat (misal +2500) ke target sebelumnya
+                currentTargetMilestone += infiniteMilestoneStep;
+            }
+
+            Debug.Log($"[LEVEL UP] Milestone ke-{currentMilestoneIndex} Tercapai! Target baru: {currentTargetMilestone}");
+            
+            // --- EKSEKUSI REWARD LEVEL UP DI SINI ---
+            // Nanti kamu bisa panggil fungsi tambah stock dan expand grid di sini
+            TriggerMilestoneRewards();
+        }
+
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateHUDScore(totalScore, currentTargetMilestone);
+        }
+
+        Debug.Log($"[SCORE UPDATE] TOTAL: {totalScore}");
     }
 
-    public void CalculateMalwarePenalty()
+    // Fungsi khusus untuk menampung efek setelah mencapai milestone
+    private void TriggerMilestoneRewards()
     {
-        foreach (var kvp in gridManager.gridMap)
+        // Contoh pemanggilan (uncomment kalau scriptnya sudah siap):
+        
+        /*
+        PlacementSystem placement = FindObjectOfType<PlacementSystem>();
+        if (placement != null)
         {
-            if (kvp.Value.type == GridTileType.Malware && !kvp.Value.isNeutralized)
-            {
-                // Deteksi 8-arah (termasuk diagonal)
-                for (int x = -1; x <= 1; x++)
-                {
-                    for (int y = -1; y <= 1; y++)
-                    {
-                        if (x == 0 && y == 0) continue;
-                        
-                        Vector2Int neighborPos = kvp.Key + new Vector2Int(x, y);
-                        if (gridManager.gridMap.ContainsKey(neighborPos))
-                        {
-                            // Malware mengurangi skor Database di sekitarnya
-                            if (gridManager.gridMap[neighborPos].type == GridTileType.Database)
-                                totalScore -= 50; // Penalty
-                        }
-                    }
-                }
-            }
+            placement.currentGlobalStock += 5; // Nambah stok block
+        }
+
+        if (gridManager != null)
+        {
+            gridManager.ExpandGrid(1); // Perluas grid 1 tile ke segala arah
+        }
+        */
+    }
+
+    public void ResetScore()
+    {
+        totalScore = 0;
+        currentMilestoneIndex = 0;
+        
+        if (milestoneTiers.Count > 0)
+            currentTargetMilestone = milestoneTiers[0];
+        else
+            currentTargetMilestone = infiniteMilestoneStep;
+
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateHUDScore(totalScore, currentTargetMilestone);
         }
     }
 }
