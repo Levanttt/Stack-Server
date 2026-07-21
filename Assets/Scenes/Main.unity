@@ -1127,7 +1127,7 @@ MonoBehaviour:
   minY: 0
   maxY: 4
   cellSize: 1
-  floorTilePrefab: {fileID: 1194238381253747403, guid: b69d498d6205dd24392424823bd60c01,
+  floorTilePrefab: {fileID: 6225183417592226066, guid: d5de5ccf9fbbf0a4495842490174bb6b,
     type: 3}
   floorContainer: {fileID: 1388119130}
   cameraTargetObject: {fileID: 1019976638}
@@ -2688,8 +2688,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gridManager: {fileID: 734200713}
-  baseHeatTolerance: 3
-  coolingPowerPerAC: 2
+  baseHeatTolerance: 4
+  coolingPowerPerAC: 3
   activeClusters: []
 --- !u!114 &2064101060
 MonoBehaviour:
@@ -2757,7 +2757,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 681bcea8bb9c92d4d80588b0b49bfff4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  milestoneTiers: 640000002c01000058020000e8030000dc05000034080000
+  milestoneTiers: 64000000fa00000026020000b6030000aa050000d0070000
   baseInfiniteStep: 1000
   infiniteStepMultiplier: 1.25
 --- !u!1660057539 &9223372036854775807
