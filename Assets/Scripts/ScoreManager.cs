@@ -3,6 +3,14 @@ using UnityEngine;
 
 public class ScoreManager : MonoBehaviour
 {
+    public static ScoreManager Instance { get; private set; }
+
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
+    }
+
     [Header("References")]
     public GridManager gridManager;
     public ClusterManager clusterManager;
@@ -14,28 +22,13 @@ public class ScoreManager : MonoBehaviour
     public int scorePerCableAdjacent = 5; 
     public int scorePerDatabaseAdjacent = 10;
     public int baseScorePerDatabaseInCluster = 20;
-
-    [Header("Milestone Settings")]
-    // Fase Awal: Target yang diatur manual
-    public List<int> milestoneTiers = new List<int> { 320, 800, 1500, 3000, 5000 };
     
-    // Fase Endless: Penambahan target otomatis kalau list di atas sudah habis
-    public int infiniteMilestoneStep = 2500; 
-
-    private int currentMilestoneIndex = 0;
-    private int currentTargetMilestone;
+    public int scoreFirewallPlacement = 10;
+    public int scoreNeutralizedMalware = 50;
+    public int penaltyOverheat = 20;
 
     [Header("Live Score")]
     public int totalScore = 0;
-
-    private void Start()
-    {
-        // Set target pertama saat game mulai
-        if (milestoneTiers.Count > 0)
-            currentTargetMilestone = milestoneTiers[0];
-        else
-            currentTargetMilestone = infiniteMilestoneStep;
-    }
 
     private bool IsCable(GridTileType type)
     {
@@ -54,6 +47,22 @@ public class ScoreManager : MonoBehaviour
             Vector2Int pos = kvp.Key;
             TileData tile = kvp.Value;
 
+            bool isOverheating = false;
+            if (tile.tileObject != null)
+            {
+                TileVFX vfx = tile.tileObject.GetComponentInChildren<TileVFX>();
+                if (vfx != null && vfx.isOverheating)
+                {
+                    isOverheating = true;
+                }
+            }
+
+            if (isOverheating) 
+            {
+                localPlacementScore -= penaltyOverheat; 
+                continue; 
+            }
+
             if (tile.type == GridTileType.Database)
             {
                 localPlacementScore += scoreDatabaseSingle; 
@@ -67,6 +76,17 @@ public class ScoreManager : MonoBehaviour
             else if (tile.type == GridTileType.Cooling)
             {
                 localPlacementScore += scoreACPlacement;
+            }
+            else if (tile.type == GridTileType.Firewall)
+            {
+                localPlacementScore += scoreFirewallPlacement;
+            }
+            else if (tile.type == GridTileType.Malware)
+            {
+                if (tile.isNeutralized)
+                {
+                    localPlacementScore += scoreNeutralizedMalware;
+                }
             }
             else if (IsCable(tile.type))
             {
@@ -138,69 +158,33 @@ public class ScoreManager : MonoBehaviour
 
         totalScore = localPlacementScore + connectionScore;
 
-        // LOGIKA ENDLESS MILESTONE
-        while (totalScore >= currentTargetMilestone)
+        // --- DELEGASIKAN TUGAS KE MILESTONE MANAGER ---
+        if (MilestoneManager.Instance != null)
         {
-            currentMilestoneIndex++;
-            
-            // Cek apakah masih dalam batas List manual
-            if (currentMilestoneIndex < milestoneTiers.Count)
-            {
-                currentTargetMilestone = milestoneTiers[currentMilestoneIndex];
-            }
-            else
-            {
-                // Mode Endless: Tambahkan secara flat (misal +2500) ke target sebelumnya
-                currentTargetMilestone += infiniteMilestoneStep;
-            }
-
-            Debug.Log($"[LEVEL UP] Milestone ke-{currentMilestoneIndex} Tercapai! Target baru: {currentTargetMilestone}");
-            
-            // --- EKSEKUSI REWARD LEVEL UP DI SINI ---
-            // Nanti kamu bisa panggil fungsi tambah stock dan expand grid di sini
-            TriggerMilestoneRewards();
+            MilestoneManager.Instance.CheckMilestone(totalScore);
         }
 
-        if (UIManager.Instance != null)
+        // --- UPDATE UI MENGAMBIL TARGET DARI MILESTONE MANAGER ---
+        if (UIManager.Instance != null && MilestoneManager.Instance != null)
         {
-            UIManager.Instance.UpdateHUDScore(totalScore, currentTargetMilestone);
+            UIManager.Instance.UpdateHUDScore(totalScore, MilestoneManager.Instance.CurrentTargetMilestone);
         }
 
         Debug.Log($"[SCORE UPDATE] TOTAL: {totalScore}");
     }
 
-    // Fungsi khusus untuk menampung efek setelah mencapai milestone
-    private void TriggerMilestoneRewards()
-    {
-        // Contoh pemanggilan (uncomment kalau scriptnya sudah siap):
-        
-        /*
-        PlacementSystem placement = FindObjectOfType<PlacementSystem>();
-        if (placement != null)
-        {
-            placement.currentGlobalStock += 5; // Nambah stok block
-        }
-
-        if (gridManager != null)
-        {
-            gridManager.ExpandGrid(1); // Perluas grid 1 tile ke segala arah
-        }
-        */
-    }
-
     public void ResetScore()
     {
         totalScore = 0;
-        currentMilestoneIndex = 0;
         
-        if (milestoneTiers.Count > 0)
-            currentTargetMilestone = milestoneTiers[0];
-        else
-            currentTargetMilestone = infiniteMilestoneStep;
-
-        if (UIManager.Instance != null)
+        if (MilestoneManager.Instance != null)
         {
-            UIManager.Instance.UpdateHUDScore(totalScore, currentTargetMilestone);
+            MilestoneManager.Instance.ResetMilestones();
+        }
+
+        if (UIManager.Instance != null && MilestoneManager.Instance != null)
+        {
+            UIManager.Instance.UpdateHUDScore(totalScore, MilestoneManager.Instance.CurrentTargetMilestone);
         }
     }
 }
