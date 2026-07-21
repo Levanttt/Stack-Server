@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using TMPro;
 
 public class PlacementSystem : MonoBehaviour
 {
@@ -19,12 +20,28 @@ public class PlacementSystem : MonoBehaviour
     [Header("Preview Settings (Hologram)")]
     public Material validMaterial;
     public Material invalidMaterial;
+    public TextMeshPro staticPreviewText; 
+    
+    // --- UBAH BAGIANDI SINI ---
+    [Header("Dynamic Offset Settings")]
+    [Tooltip("Offset standar untuk ukuran ganjil (1, 3, dst) atau default")]
+    public Vector3 defaultTextOffset = new Vector3(0f, 2f, 0f); 
+    
+    [Tooltip("Offset khusus untuk blok ukuran 2 (Double Block)")]
+    public Vector3 doubleBlockTextOffset = new Vector3(-0.5f, 2f, 0f);
+
+    // Variabel internal untuk menyimpan offset yang sedang dipakai
+    private Vector3 currentDynamicTextOffset; 
+    // ---------------------------
 
     private GameObject previewObject;
     private GameObject lastBlockPrefab;
 
     public Dictionary<Vector2Int, BlockData> gridData = new Dictionary<Vector2Int, BlockData>();
     private float currentRotation = 0f;
+
+    private Vector2Int lastHoveredPos = new Vector2Int(-999, -999);
+    private float lastRotation = -1f;
 
     private void Update()
     {
@@ -75,7 +92,6 @@ public class PlacementSystem : MonoBehaviour
             return;
         }
 
-        // Hapus pengecekan currentGlobalStock di sini, cukup cek blockPrefab == null
         if (EventSystem.current.IsPointerOverGameObject() || blockPrefab == null)
         {
             HidePreview();
@@ -104,7 +120,6 @@ public class PlacementSystem : MonoBehaviour
             foreach (TileOccupancy tile in rotatedTiles)
             {
                 Vector2Int worldGridPos = baseGridPos + tile.position;
-
                 if (gridData.ContainsKey(worldGridPos) || !gridManager.floorGrid.ContainsKey(worldGridPos))
                 {
                     canPlace = false;
@@ -119,10 +134,61 @@ public class PlacementSystem : MonoBehaviour
                 SetPreviewColor(canPlace);
             }
 
+            if (canPlace)
+            {
+                if (baseGridPos != lastHoveredPos || currentRotation != lastRotation)
+                {
+                    lastHoveredPos = baseGridPos;
+                    lastRotation = currentRotation;
+
+                    int estimatedScore = scoreManager.GetEstimatedPlacementScore(baseGridPos, rotatedTiles);
+
+                    if (staticPreviewText != null)
+                    {
+                        staticPreviewText.gameObject.SetActive(true);
+                        
+                        // --- GUNAKAN OFFSET DINAMIS DI SINI ---
+                        staticPreviewText.transform.position = previewObject.transform.position + currentDynamicTextOffset;
+                        // --------------------------------------
+                        
+                        if (Camera.main != null) staticPreviewText.transform.rotation = Camera.main.transform.rotation;
+                        
+                        if (estimatedScore > 0) { staticPreviewText.text = $"+{estimatedScore}"; staticPreviewText.color = Color.green; }
+                        else if (estimatedScore < 0) { staticPreviewText.text = $"{estimatedScore}"; staticPreviewText.color = Color.red; }
+                        else { staticPreviewText.text = "0"; staticPreviewText.color = Color.gray; }
+                    }
+
+                    if (UIManager.Instance != null && MilestoneManager.Instance != null)
+                    {
+                        UIManager.Instance.ShowScorePreview(
+                            scoreManager.totalScore, 
+                            estimatedScore, 
+                            MilestoneManager.Instance.CurrentTargetMilestone
+                        );
+                    }
+                }
+            }
+            else
+            {
+                if (staticPreviewText != null) staticPreviewText.gameObject.SetActive(false);
+                lastHoveredPos = new Vector2Int(-999, -999);
+
+                if (UIManager.Instance != null) UIManager.Instance.HideScorePreview();
+            }
+
             if (canPlace && Input.GetMouseButtonDown(0))
             {
+                int finalScoreGained = scoreManager.GetEstimatedPlacementScore(baseGridPos, rotatedTiles);
+                
+                // --- GUNAKAN OFFSET DINAMIS DI SINI JUGA ---
+                Vector3 popUpPos = previewObject.transform.position + currentDynamicTextOffset;
+                // -------------------------------------------
+                
+                FloatingTextManager.Instance.SpawnPreviewScore(popUpPos, finalScoreGained);
+
                 PlaceBlock(baseGridPos, rotatedTiles);
                 HidePreview();
+                lastHoveredPos = new Vector2Int(-999, -999); 
             }
         }
         else
@@ -136,46 +202,65 @@ public class PlacementSystem : MonoBehaviour
         if (previewObject != null) Destroy(previewObject);
         if (blockPrefab == null) return;
 
-        currentRotation = 0f;
+        // =========================================================
+        // --- SISTEM PENDETEKSI UKURAN OTOMATIS (BARU) ---
+        // =========================================================
+        BlockData dataForOffset = blockPrefab.GetComponent<BlockData>();
+        if (dataForOffset != null)
+        {
+            // Cek berapa jumlah kotak (tile) di dalam blok ini
+            int blockSize = dataForOffset.localTiles.Count;
 
+            // Jika ukurannya 2, pakai offset khusus yang kamu temukan
+            if (blockSize == 2)
+            {
+                currentDynamicTextOffset = doubleBlockTextOffset;
+            }
+            else
+            {
+                // Selain ukuran 2 (1, 3, 4, dst), pakai default (0, 2, 0)
+                currentDynamicTextOffset = defaultTextOffset;
+            }
+        }
+        else
+        {
+            currentDynamicTextOffset = defaultTextOffset; // Backup
+        }
+        // =========================================================
+
+        currentRotation = 0f;
         previewObject = Instantiate(blockPrefab);
         previewObject.name = "BlockPreview_Hologram";
         previewObject.transform.rotation = Quaternion.Euler(0, currentRotation, 0);
 
         Destroy(previewObject.GetComponent<BlockData>());
         Collider[] colliders = previewObject.GetComponentsInChildren<Collider>();
-        foreach (Collider col in colliders)
-        {
-            Destroy(col);
-        }
+        foreach (Collider col in colliders) Destroy(col);
+        
+        lastHoveredPos = new Vector2Int(-999, -999); 
     }
 
+    //... (Sisa script ke bawah sama persis seperti sebelumnya)
     private void SetPreviewColor(bool isValid)
     {
         if (previewObject == null) return;
-
         Material targetMat = isValid ? validMaterial : invalidMaterial;
         MeshRenderer[] renderers = previewObject.GetComponentsInChildren<MeshRenderer>();
-
-        foreach (MeshRenderer r in renderers)
-        {
-            r.material = targetMat;
-        }
+        foreach (MeshRenderer r in renderers) r.material = targetMat;
     }
 
     private void HidePreview()
     {
-        if (previewObject != null)
-        {
-            previewObject.SetActive(false);
-        }
+        if (previewObject != null) previewObject.SetActive(false);
+        if (staticPreviewText != null) staticPreviewText.gameObject.SetActive(false);
+        if (UIManager.Instance != null) UIManager.Instance.HideScorePreview();
     }
 
     private void PlaceBlock(Vector2Int baseGridPos, List<TileOccupancy> rotatedTiles)
     {
         Vector3 spawnPos = new Vector3(baseGridPos.x * cellSize, 0.05f, baseGridPos.y * cellSize);
         GameObject newBlock = Instantiate(blockPrefab, spawnPos, Quaternion.Euler(0, currentRotation, 0));
-
+        
         newBlock.AddComponent<BlockDropAnimator>();
 
         BlockData data = newBlock.GetComponent<BlockData>();
@@ -189,9 +274,7 @@ public class PlacementSystem : MonoBehaviour
 
         if (clusterManager != null) clusterManager.CalculateClusters();
         if (virusManager != null) virusManager.NeutralizeVirus();
-
         if (scoreManager != null) scoreManager.CalculateScore();
-
         if (queueManager != null) queueManager.OnBlockPlacedSuccessfully();
 
         if (queueManager != null)
@@ -243,6 +326,6 @@ public class PlacementSystem : MonoBehaviour
                 }
             }
         }
-        return true; // Kalau semua blok di tangan gak muat, Game Over
+        return true; 
     }
 }

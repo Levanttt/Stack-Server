@@ -49,6 +49,8 @@ MonoBehaviour:
   targetRenderer: {fileID: 339115061261480030}
   overheatGlowColor: {r: 2, g: 0, b: 0, a: 1}
   blinkSpeed: 4
+  isInfected: 0
+  warningIcon: {fileID: 0}
 --- !u!1001 &1402118084887260378
 PrefabInstance:
   m_ObjectHideFlags: 0

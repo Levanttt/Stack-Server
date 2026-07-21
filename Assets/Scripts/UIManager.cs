@@ -10,6 +10,7 @@ public class UIManager : MonoBehaviour
 
     [Header("HUD Score UI")]
     public Image radialScoreFill;
+    public Image previewScoreFill; // <--- VARIABEL BARU UNTUK GHOST PREVIEW
     public TextMeshProUGUI scoreValueText; 
     public TextMeshProUGUI scoreMaxText;   
 
@@ -56,6 +57,9 @@ public class UIManager : MonoBehaviour
             scoreMaxText.fontSize = maxBaseSize;
         }
         if (radialScoreFill != null) originalFillColor = radialScoreFill.color;
+        
+        // Pastikan ghost bar disembunyikan saat game baru mulai
+        HideScorePreview();
     }
 
     private void Update()
@@ -177,5 +181,36 @@ public class UIManager : MonoBehaviour
     {
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    // =========================================================
+    // --- FUNGSI BARU: GHOST PREVIEW BAR ---
+    // =========================================================
+    public void ShowScorePreview(int currentScore, int estimatedBonus, int targetScore)
+    {
+        if (previewScoreFill == null) return;
+
+        if (estimatedBonus > 0 && targetScore > 0)
+        {
+            previewScoreFill.gameObject.SetActive(true);
+            
+            float target = (float)targetScore;
+            float predictedScore = (float)(currentScore + estimatedBonus);
+            
+            // Batasi fill maximum agar bayangan tidak melebihi 100% (nilai 1f)
+            previewScoreFill.fillAmount = Mathf.Clamp01(predictedScore / target);
+        }
+        else
+        {
+            HideScorePreview();
+        }
+    }
+
+    public void HideScorePreview()
+    {
+        if (previewScoreFill != null)
+        {
+            previewScoreFill.gameObject.SetActive(false);
+        }
     }
 }

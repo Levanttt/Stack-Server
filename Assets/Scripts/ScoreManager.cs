@@ -83,7 +83,28 @@ public class ScoreManager : MonoBehaviour
             else if (tile.type == GridTileType.Firewall) localPlacementScore += scoreFirewallPlacement;
             else if (tile.type == GridTileType.Malware)
             {
-                if (tile.isNeutralized) localPlacementScore += scoreNeutralizedMalware;
+                if (tile.isNeutralized)
+                {
+                    localPlacementScore += scoreNeutralizedMalware;
+                }
+                else
+                {
+                    int infectedBlocksCount = 0;
+                    Vector2Int[] eightDirs = {
+                        new Vector2Int(0, 1), new Vector2Int(1, 1), new Vector2Int(1, 0), new Vector2Int(1, -1),
+                        new Vector2Int(0, -1), new Vector2Int(-1, -1), new Vector2Int(-1, 0), new Vector2Int(-1, 1)
+                    };
+
+                    foreach (Vector2Int dir in eightDirs)
+                    {
+                        if (gridManager.gridMap.ContainsKey(pos + dir))
+                        {
+                            infectedBlocksCount++;
+                        }
+                    }
+
+                    localPlacementScore -= (infectedBlocksCount * 10); 
+                }
             }
             else if (IsCable(tile.type))
             {
@@ -322,5 +343,40 @@ public class ScoreManager : MonoBehaviour
 
         // Kalau gagal (misal untuk balok 1x1 murni yang tidak punya anak GameObject), kembalikan utuh
         return parentBlock.transform;
+    }
+
+    public int GetEstimatedPlacementScore(Vector2Int baseGridPos, List<TileOccupancy> rotatedTiles)
+    {
+        int estimatedScore = 0;
+
+        foreach (TileOccupancy tile in rotatedTiles)
+        {
+            Vector2Int worldPos = baseGridPos + tile.position;
+
+            if (tile.type == GridTileType.Database)
+            {
+                estimatedScore += scoreDatabaseSingle; // Poin dasar
+
+                // Ramal poin tetangga (Adjacency)
+                if (gridManager != null)
+                {
+                    List<TileData> neighbors = gridManager.GetOrthogonalNeighbors(worldPos);
+                    foreach (TileData neighbor in neighbors)
+                    {
+                        if (neighbor.type == GridTileType.Database)
+                        {
+                            estimatedScore += scoreDatabaseAdjacency;
+                        }
+                    }
+                }
+            }
+            else if (tile.type == GridTileType.Cooling)
+            {
+                estimatedScore += scoreACPlacement;
+            }
+            // Kamu bisa menambahkan prediksi untuk Firewall/Kabel di sini nanti
+        }
+
+        return estimatedScore;
     }
 }

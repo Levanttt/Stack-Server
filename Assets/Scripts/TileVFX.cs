@@ -16,6 +16,10 @@ public class TileVFX : MonoBehaviour
     private Material[] materials;
     private Coroutine overheatCoroutine;
 
+    [Header("Infection Visuals")]
+    public bool isInfected = false;
+    public GameObject warningIcon;
+
     private void Awake()
     {
         if (targetRenderer != null) 
@@ -68,5 +72,16 @@ public class TileVFX : MonoBehaviour
     private void ResetGlow()
     {
         SetEmissionColor(Color.black);
+    }
+
+    public void SetInfectedVisual(bool state)
+    {
+        isInfected = state;
+        
+        if (warningIcon != null)
+        {
+            // Nyalakan ikon jika terinfeksi, matikan jika aman
+            warningIcon.SetActive(isInfected);
+        }
     }
 }
