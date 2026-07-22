@@ -8,7 +8,7 @@ ModelImporter:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: UVfirewall
-    second: {fileID: 2800000, guid: 99502b4477aa23144be0d21f5bff8cec, type: 3}
+    second: {fileID: 2800000, guid: 617784a7604770a499e67965b0802959, type: 3}
   materials:
     materialImportMode: 2
     materialName: 0
