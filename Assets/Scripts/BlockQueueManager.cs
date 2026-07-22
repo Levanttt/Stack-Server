@@ -425,21 +425,45 @@ public class BlockQueueManager : MonoBehaviour
 
     private void CheckGameOverCondition()
     {
-        int blocksInHand = 0;
-        for (int i = 0; i < activeHand.Length; i++)
+        List<GameObject> availableBlocks = GetCurrentAvailableBlocks();
+
+        // 1. Cek apakah tangan kosong DAN deck habis (Habis Stok)
+        if (currentDeck.Count == 0 && availableBlocks.Count == 0)
         {
-            if (activeHand[i] != null) blocksInHand++;
+            TriggerGameOver("OUT OF STOCK");
+            return;
         }
 
-        if (currentDeck.Count == 0 && blocksInHand == 0)
+        // 2. Cek apakah sisa balok di tangan MASIH BISA ditaruh di papan (Board Full / Grid Stuck)
+        if (placementSystem != null)
         {
-            Debug.Log("GAME OVER! Stok blok habis.");
-            if (UIManager.Instance != null)
+            bool cannotPlaceAny = placementSystem.CheckForGameOver(availableBlocks);
+            if (cannotPlaceAny)
             {
-                int finalScore = 0; 
-                if(ScoreManager.Instance != null) finalScore = ScoreManager.Instance.totalScore;
-                UIManager.Instance.ShowGameOverPanel(finalScore);
+                TriggerGameOver("NO VALID MOVES");
             }
+        }
+    }
+
+    private void TriggerGameOver(string reason)
+    {
+        Debug.Log($"GAME OVER! Reason: {reason}");
+        
+        if (ScoreManager.Instance != null) 
+        {
+            ScoreManager.Instance.CheckAndSaveHighScore();
+        }
+
+        if (UIManager.Instance != null)
+        {
+            int finalScore = ScoreManager.Instance != null ? ScoreManager.Instance.totalScore : 0;
+            // Jika UIManager barumu butuh string alasan, bisa di-passing di sini
+            UIManager.Instance.ShowGameOverPanel(finalScore); 
+        }
+
+        if (GameStateManager.Instance != null)
+        {
+            GameStateManager.Instance.ChangeState(GameState.GameOver);
         }
     }
 
