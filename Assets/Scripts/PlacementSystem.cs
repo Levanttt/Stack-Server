@@ -295,6 +295,8 @@ public class PlacementSystem : MonoBehaviour
 
             if (isGameOver)
             {
+                ScoreManager.Instance.CheckAndSaveHighScore();
+                
                 if (UIManager.Instance != null) UIManager.Instance.ShowGameOverPanel(scoreManager.totalScore);
                 if (GameStateManager.Instance != null) GameStateManager.Instance.ChangeState(GameState.GameOver);
             }

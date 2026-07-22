@@ -19,6 +19,7 @@ public class ScoreManager : MonoBehaviour
     public int scorePerDatabaseAdjacent = 5;
     public int scorePerCableAdjacent = 2;
     public int baseScorePerDatabaseInCluster = 10;
+    
     [Header("Cooling Settings")]
     public int acCoolingRadius = 2;
     public int penaltyOverheat = 20; 
@@ -27,6 +28,10 @@ public class ScoreManager : MonoBehaviour
     public int scoreFullLineBonus = 50; 
     
     [HideInInspector] public int totalScore = 0;
+    
+    // --- TAMBAHAN HIGHSCORE ---
+    public int highScore = 0; 
+    
     private int permanentBonusScore = 0; 
     private HashSet<string> claimedLines = new HashSet<string>(); 
 
@@ -34,6 +39,13 @@ public class ScoreManager : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+    }
+
+    // --- TAMBAHAN HIGHSCORE ---
+    private void Start()
+    {
+        // Tarik data highscore dari memori perangkat. Jika kosong (pemain baru), kembalikan nilai 0.
+        highScore = PlayerPrefs.GetInt("HighScoreData", 0);
     }
 
     private bool IsCable(GridTileType type)
@@ -526,5 +538,25 @@ public class ScoreManager : MonoBehaviour
         tempScore += (projectedFullLines * scoreFullLineBonus);
 
         return tempScore;
+    }
+
+    // --- TAMBAHAN HIGHSCORE ---
+    // Panggil fungsi ini saat Game Over
+    public void CheckAndSaveHighScore()
+    {
+        if (totalScore > highScore)
+        {
+            highScore = totalScore;
+            PlayerPrefs.SetInt("HighScoreData", highScore);
+            PlayerPrefs.Save();
+            
+            Debug.Log($"<color=yellow>NEW HIGHSCORE ACHIEVED: {highScore}</color>");
+        }
+    }
+
+    // Gunakan fungsi ini untuk mengambil data skor tertinggi dan menampilkannya di UI Menu/Game Over
+    public int GetHighScore()
+    {
+        return PlayerPrefs.GetInt("HighScoreData", 0);
     }
 }

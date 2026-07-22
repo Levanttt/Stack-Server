@@ -33,10 +33,26 @@ public class UIManager : MonoBehaviour
     public Color milestoneFlashColor = new Color(0.4f, 0.95f, 1f, 1f); 
     public Color negativeScoreColor = Color.red; 
 
-    [Header("Game Over UI")]
+    [Header("Game Over - Parent & Dimmer")]
     public GameObject gameOverPanel;
+    public CanvasGroup bgDimmer; 
+
+    [Header("Game Over - Phase 1 (Stripe Banner)")]
+    public CanvasGroup stripeBanner; 
+    
+    [Header("Game Over - Phase 2 (Main Board)")]
+    public RectTransform mainBoard; 
+    public TextMeshProUGUI reasonText; 
     public TextMeshProUGUI finalScoreText;
     public TextMeshProUGUI highScoreText;
+    
+    [Header("Game Over - Phase 3 (New Record Stamp)")]
+    public GameObject newRecordStamp;
+    public RectTransform newRecordTransform; 
+    
+    [Header("Game Over - Buttons")]
+    public GameObject buttonsGroup; 
+
     private float actualTargetFill = 0f; 
     private float mainTargetFill = 0f;   
     private float ghostTargetFill = 0f;  
@@ -81,6 +97,8 @@ public class UIManager : MonoBehaviour
         if (radialScoreFill != null) originalFillColor = radialScoreFill.color;
         
         HideScorePreview();
+
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
     }
 
     private void Update()
@@ -242,27 +260,6 @@ public class UIManager : MonoBehaviour
         if (radialScoreFill != null) radialScoreFill.color = originalFillColor;
     }
 
-    public void ShowGameOverPanel(int finalScore)
-    {
-        if (gameOverPanel == null) return;
-        gameOverPanel.SetActive(true);
-        if (finalScoreText != null) finalScoreText.text = "Score: " + finalScore.ToString(); 
-        
-        int highScore = PlayerPrefs.GetInt("HighScore", 0);
-        if (finalScore > highScore)
-        {
-            PlayerPrefs.SetInt("HighScore", finalScore);
-            highScore = finalScore;
-        }
-        if (highScoreText != null) highScoreText.text = "Best: " + highScore.ToString();
-    }
-
-    public void RestartGame()
-    {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-    }
-
     public void ShowScorePreview(int currentScore, int estimatedScore, int targetScore)
     {
         if (targetScore <= 0) targetScore = 1;
@@ -307,5 +304,150 @@ public class UIManager : MonoBehaviour
         isPreviewing = false; 
         if (scorePreviewFill != null) scorePreviewFill.gameObject.SetActive(false);
         mainTargetFill = actualTargetFill;
+    }
+
+    // ==========================================
+    // LOGIKA GAME OVER CINEMATIC
+    // ==========================================
+    public void ShowGameOverPanel(int finalScore)
+    {
+        StartCoroutine(GameOverSequence(finalScore, "SYSTEM OVERLOADED"));
+    }
+
+    private IEnumerator GameOverSequence(int finalScore, string reasonMsg)
+    {
+        // 1. Cek Data Highscore
+        int currentHighScore = PlayerPrefs.GetInt("HighScore", 0);
+        bool isNewRecord = false;
+        
+        if (finalScore > currentHighScore)
+        {
+            PlayerPrefs.SetInt("HighScore", finalScore);
+            PlayerPrefs.Save();
+            currentHighScore = finalScore;
+            isNewRecord = true;
+        }
+
+        // 2. SET UP KONDISI AWAL
+        if (gameOverPanel != null) gameOverPanel.SetActive(true);
+        if (bgDimmer != null) bgDimmer.alpha = 0f;
+        
+        if (stripeBanner != null)
+        {
+            stripeBanner.alpha = 0f;
+            stripeBanner.gameObject.SetActive(true);
+        }
+        
+        if (mainBoard != null)
+        {
+            mainBoard.anchoredPosition = new Vector2(-1500f, mainBoard.anchoredPosition.y);
+            mainBoard.gameObject.SetActive(true);
+        }
+
+        if (newRecordStamp != null) newRecordStamp.SetActive(false);
+        if (buttonsGroup != null) buttonsGroup.SetActive(false);
+
+        // Isi Teks
+        if (reasonText != null) reasonText.text = reasonMsg;
+        if (finalScoreText != null) finalScoreText.text = finalScore.ToString();
+        if (highScoreText != null) 
+        {
+            highScoreText.text = currentHighScore.ToString();
+            highScoreText.color = isNewRecord ? Color.yellow : Color.white;
+        }
+
+        // 3. PHASE 1: FADE IN STRIPE BANNER
+        float elapsed = 0f;
+        float duration = 0.5f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            if (stripeBanner != null) stripeBanner.alpha = Mathf.Lerp(0f, 1f, elapsed / duration);
+            yield return null;
+        }
+
+        // Jeda dramatis
+        yield return new WaitForSeconds(1.5f);
+
+        // 4. PHASE 2: SLIDE IN MAIN BOARD & FADE BACKGROUND
+        Vector2 boardStartPos = new Vector2(-1500f, mainBoard != null ? mainBoard.anchoredPosition.y : 0f);
+        Vector2 boardCenterPos = new Vector2(0f, mainBoard != null ? mainBoard.anchoredPosition.y : 0f);
+        
+        elapsed = 0f;
+        duration = 0.6f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            float smoothT = 1f - Mathf.Pow(1f - t, 3f); 
+
+            if (bgDimmer != null) bgDimmer.alpha = Mathf.Lerp(0f, 0.6f, smoothT); 
+            if (stripeBanner != null) stripeBanner.alpha = Mathf.Lerp(1f, 0f, smoothT); 
+            if (mainBoard != null) mainBoard.anchoredPosition = Vector2.Lerp(boardStartPos, boardCenterPos, smoothT); 
+
+            yield return null;
+        }
+        if (stripeBanner != null) stripeBanner.gameObject.SetActive(false);
+
+        // Jeda sebentar sebelum tombol
+        yield return new WaitForSeconds(0.3f);
+        if (buttonsGroup != null) buttonsGroup.SetActive(true);
+
+        // 5. PHASE 3: ANIMASI "NEW RECORD!"
+        if (isNewRecord && newRecordStamp != null && newRecordTransform != null)
+        {
+            newRecordStamp.SetActive(true);
+            newRecordTransform.localScale = Vector3.zero;
+
+            // Animasi Pop Up
+            elapsed = 0f;
+            duration = 0.4f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / duration;
+                float bounceT = 1f + 0.5f * Mathf.Sin(t * Mathf.PI) * (1f - t); 
+                newRecordTransform.localScale = Vector3.one * bounceT;
+                yield return null;
+            }
+            newRecordTransform.localScale = Vector3.one;
+
+            StartCoroutine(PulseNewRecord());
+        }
+    }
+
+    private IEnumerator PulseNewRecord()
+    {
+        while (true)
+        {
+            float elapsed = 0f;
+            float duration = 0.8f; 
+            
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / duration;
+                
+                float scale = 1f + 0.15f * Mathf.Sin(t * Mathf.PI); 
+                if (newRecordTransform != null) newRecordTransform.localScale = Vector3.one * scale;
+                
+                yield return null;
+            }
+        }
+    }
+
+    // ==========================================
+    // FUNGSI TOMBOL NAVIGASI
+    // ==========================================
+    public void RestartGame()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    public void ReturnToMainMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("MainMenu"); // Sesuaikan nama scene menu utamamu
     }
 }
