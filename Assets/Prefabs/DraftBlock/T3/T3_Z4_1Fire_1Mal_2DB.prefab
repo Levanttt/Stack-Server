@@ -48,11 +48,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 578ada32be06fb84d996e2224877b95f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  blockIcon: {fileID: 0}
   localTiles:
   - position: {x: 0, y: 0}
-    type: 8
-  - position: {x: -1, y: 0}
     type: 1
+  - position: {x: -1, y: 0}
+    type: 8
   - position: {x: 0, y: 1}
     type: 1
   - position: {x: 1, y: 1}
@@ -216,7 +217,7 @@ PrefabInstance:
     - target: {fileID: 3955782053466174749, guid: e08c86dd2c6101641b79db3c1dcc214c,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3955782053466174749, guid: e08c86dd2c6101641b79db3c1dcc214c,
         type: 3}
@@ -290,7 +291,7 @@ PrefabInstance:
     - target: {fileID: 3955782053466174749, guid: a7b5a839e13aedd4aab34ab1fb34cecb,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -1
       objectReference: {fileID: 0}
     - target: {fileID: 3955782053466174749, guid: a7b5a839e13aedd4aab34ab1fb34cecb,
         type: 3}
