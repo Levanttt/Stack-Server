@@ -56,7 +56,7 @@ MonoBehaviour:
     type: 1
   - position: {x: 1, y: 0}
     type: 1
-  - position: {x: 0, y: -1}
+  - position: {x: 0, y: 1}
     type: 8
 --- !u!1001 &517900372225692765
 PrefabInstance:
@@ -301,7 +301,7 @@ PrefabInstance:
     - target: {fileID: 3955782053466174749, guid: a7b5a839e13aedd4aab34ab1fb34cecb,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -1
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3955782053466174749, guid: a7b5a839e13aedd4aab34ab1fb34cecb,
         type: 3}

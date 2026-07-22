@@ -316,16 +316,16 @@ public class UIManager : MonoBehaviour
 
     private IEnumerator GameOverSequence(int finalScore, string reasonMsg)
     {
-        // 1. Cek Data Highscore
-        int currentHighScore = PlayerPrefs.GetInt("HighScore", 0);
+        // 1. Cek Data Highscore Melalui HighScoreManager
+        // Sistem otomatis mengevaluasi dan menyimpan rekor, lalu mengembalikan status True/False
         bool isNewRecord = false;
-        
-        if (finalScore > currentHighScore)
+        int currentHighScore = 0;
+
+        // Memastikan HighScoreManager tidak Null agar aman dari error
+        if (HighScoreManager.Instance != null)
         {
-            PlayerPrefs.SetInt("HighScore", finalScore);
-            PlayerPrefs.Save();
-            currentHighScore = finalScore;
-            isNewRecord = true;
+            isNewRecord = HighScoreManager.Instance.CheckAndSaveNewRecord(finalScore);
+            currentHighScore = HighScoreManager.Instance.GetHighScore();
         }
 
         // 2. SET UP KONDISI AWAL
@@ -340,8 +340,9 @@ public class UIManager : MonoBehaviour
         
         if (mainBoard != null)
         {
-            mainBoard.anchoredPosition = new Vector2(-1500f, mainBoard.anchoredPosition.y);
-            mainBoard.gameObject.SetActive(true);
+            // LEMPAR JAUH KE -2500 DAN MATIKAN DULU!
+            mainBoard.anchoredPosition = new Vector2(-2500f, mainBoard.anchoredPosition.y);
+            mainBoard.gameObject.SetActive(false); 
         }
 
         if (newRecordStamp != null) newRecordStamp.SetActive(false);
@@ -366,11 +367,14 @@ public class UIManager : MonoBehaviour
             yield return null;
         }
 
-        // Jeda dramatis
+        // Jeda dramatis (Stripe Banner tampil sendiri)
         yield return new WaitForSeconds(1.5f);
 
         // 4. PHASE 2: SLIDE IN MAIN BOARD & FADE BACKGROUND
-        Vector2 boardStartPos = new Vector2(-1500f, mainBoard != null ? mainBoard.anchoredPosition.y : 0f);
+        // BARU NYALAKAN MAIN BOARD DI SINI SEBELUM MELUNCUR
+        if (mainBoard != null) mainBoard.gameObject.SetActive(true);
+        
+        Vector2 boardStartPos = new Vector2(-2500f, mainBoard != null ? mainBoard.anchoredPosition.y : 0f);
         Vector2 boardCenterPos = new Vector2(0f, mainBoard != null ? mainBoard.anchoredPosition.y : 0f);
         
         elapsed = 0f;
@@ -379,6 +383,7 @@ public class UIManager : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
+            // Rumus smooth step agar luncurannya mulus
             float smoothT = 1f - Mathf.Pow(1f - t, 3f); 
 
             if (bgDimmer != null) bgDimmer.alpha = Mathf.Lerp(0f, 0.6f, smoothT); 
@@ -387,9 +392,10 @@ public class UIManager : MonoBehaviour
 
             yield return null;
         }
+        
         if (stripeBanner != null) stripeBanner.gameObject.SetActive(false);
 
-        // Jeda sebentar sebelum tombol
+        // Jeda sebentar sebelum tombol muncul
         yield return new WaitForSeconds(0.3f);
         if (buttonsGroup != null) buttonsGroup.SetActive(true);
 
@@ -421,15 +427,29 @@ public class UIManager : MonoBehaviour
         while (true)
         {
             float elapsed = 0f;
-            float duration = 0.8f; 
+            float duration = 0.8f; // Kecepatan satu siklus detak dan goyangan
             
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
                 float t = elapsed / duration;
                 
+                // 1. Animasi Skala (Kedat-kedut membesar)
+                // Menggunakan setengah gelombang Sin (0 -> 1 -> 0)
                 float scale = 1f + 0.15f * Mathf.Sin(t * Mathf.PI); 
-                if (newRecordTransform != null) newRecordTransform.localScale = Vector3.one * scale;
+                
+                // 2. Animasi Rotasi Z (Miring kanan-kiri)
+                // Menggunakan gelombang penuh Sin (0 -> 1 -> 0 -> -1 -> 0) dikali kemiringan maksimal
+                float maxTiltAngle = 10f; // Ubah angka ini kalau mau miringnya lebih ekstrem (misal 15f atau 20f)
+                float zRotation = Mathf.Sin(t * Mathf.PI * 2f) * maxTiltAngle; 
+                
+                if (newRecordTransform != null) 
+                {
+                    // Terapkan skala
+                    newRecordTransform.localScale = Vector3.one * scale;
+                    // Terapkan rotasi pada sumbu Z
+                    newRecordTransform.localEulerAngles = new Vector3(0f, 0f, zRotation); 
+                }
                 
                 yield return null;
             }
