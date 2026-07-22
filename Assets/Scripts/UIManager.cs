@@ -13,28 +13,50 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI scoreValueText; 
     public TextMeshProUGUI scoreMaxText;   
 
+    [Header("Score Bar UI")]
+    public UnityEngine.UI.Image scoreFill;         
+    public UnityEngine.UI.Image scorePreviewFill;
+
+    [Header("Ghost Bar Colors (Atur di Sini!)")]
+    public Color positivePreviewColor = new Color(0f, 1f, 0f, 0.6f); 
+    public Color negativePreviewColor = new Color(1f, 0f, 0f, 1f);   
+
     [Header("Dynamic Font Scaling")]
     public float valueBaseSize = 32f;
     public float maxBaseSize = 28f;
-    public int safeCharacterLimit = 4;       // Batas aman huruf sebelum mulai dikecilkan
-    public float sizeReductionPerChar = 2f;  // Turun 2 poin tiap nambah 1 huruf ekstra
+    public int safeCharacterLimit = 4;      
+    public float sizeReductionPerChar = 2f;  
     
     [Header("Animation Settings")]
     public float fillAnimationSpeed = 5f;
+    public float barSmoothTime = 0.15f; 
     public Color milestoneFlashColor = new Color(0.4f, 0.95f, 1f, 1f); 
+    public Color negativeScoreColor = Color.red; 
 
     [Header("Game Over UI")]
     public GameObject gameOverPanel;
     public TextMeshProUGUI finalScoreText;
     public TextMeshProUGUI highScoreText;
+    private float actualTargetFill = 0f; 
+    private float mainTargetFill = 0f;   
+    private float ghostTargetFill = 0f;  
 
-    private float targetFillAmount = 0f;
     private int lastMilestoneScore = 0;
     private bool isWrappingAround = false;
+    private bool isPreviewing = false; 
+
+    private float radialVelocity = 0f;
+    private float linearVelocity = 0f;
+    private float ghostVelocity = 0f;
+
+    private int displayedScore = 0;
+    private int targetScoreValue = 0;
+    private Coroutine scoreLerpCoroutine;
 
     private Vector3 originalTextScale;
     private Vector3 originalMaxTextScale;
     private Color originalFillColor;
+    private Color originalTextColor;
     private Coroutine celebrationCoroutine;
 
     private void Awake()
@@ -49,6 +71,7 @@ public class UIManager : MonoBehaviour
         {
             originalTextScale = scoreValueText.transform.localScale;
             scoreValueText.fontSize = valueBaseSize;
+            originalTextColor = scoreValueText.color; 
         }
         if (scoreMaxText != null) 
         {
@@ -56,48 +79,133 @@ public class UIManager : MonoBehaviour
             scoreMaxText.fontSize = maxBaseSize;
         }
         if (radialScoreFill != null) originalFillColor = radialScoreFill.color;
+        
+        HideScorePreview();
     }
 
     private void Update()
     {
-        if (radialScoreFill != null)
+        if (isWrappingAround)
         {
-            if (isWrappingAround)
+            float step = Time.deltaTime * fillAnimationSpeed * 2f;
+            bool radialDone = false;
+            bool linearDone = false;
+
+            if (radialScoreFill != null)
             {
-                radialScoreFill.fillAmount = Mathf.Lerp(radialScoreFill.fillAmount, 1.05f, Time.deltaTime * fillAnimationSpeed * 1.5f);
-                
-                if (radialScoreFill.fillAmount >= 1f)
-                {
-                    radialScoreFill.fillAmount = 0f; 
-                    isWrappingAround = false; 
-                }
+                radialScoreFill.fillAmount = Mathf.MoveTowards(radialScoreFill.fillAmount, 1f, step);
+                if (radialScoreFill.fillAmount >= 1f) radialDone = true;
             }
-            else if (radialScoreFill.fillAmount != targetFillAmount)
+            else radialDone = true;
+
+            if (scoreFill != null)
             {
-                radialScoreFill.fillAmount = Mathf.Lerp(radialScoreFill.fillAmount, targetFillAmount, Time.deltaTime * fillAnimationSpeed);
+                scoreFill.fillAmount = Mathf.MoveTowards(scoreFill.fillAmount, 1f, step);
+                if (scoreFill.fillAmount >= 1f) linearDone = true;
+            }
+            else linearDone = true;
+
+            if (radialDone && linearDone) 
+            {
+                isWrappingAround = false;
+                if (scoreFill != null) scoreFill.fillAmount = 0f;
+                if (radialScoreFill != null) radialScoreFill.fillAmount = 0f;
+                linearVelocity = 0f;
+                radialVelocity = 0f;
+            }
+        }
+        else
+        {
+            if (radialScoreFill != null)
+                radialScoreFill.fillAmount = Mathf.SmoothDamp(radialScoreFill.fillAmount, mainTargetFill, ref radialVelocity, barSmoothTime);
+            
+            if (scoreFill != null)
+                scoreFill.fillAmount = Mathf.SmoothDamp(scoreFill.fillAmount, mainTargetFill, ref linearVelocity, barSmoothTime);
+
+            if (isPreviewing && scorePreviewFill != null && scorePreviewFill.gameObject.activeSelf)
+            {
+                scorePreviewFill.fillAmount = Mathf.SmoothDamp(scorePreviewFill.fillAmount, ghostTargetFill, ref ghostVelocity, barSmoothTime * 0.8f);
             }
         }
     }
 
     private string FormatScore(int score)
     {
-        if (score >= 1000000)
-            return (score / 1000000f).ToString("0.#") + "M"; 
-        if (score >= 10000)
-            return (score / 1000f).ToString("0.#") + "K";    
-            
-        return score.ToString(); 
+        bool isNegative = score < 0;
+        int absScore = Mathf.Abs(score);
+
+        string result = "";
+        if (absScore >= 1000000)
+            result = (absScore / 1000000f).ToString("0.#") + "M"; 
+        else if (absScore >= 10000)
+            result = (absScore / 1000f).ToString("0.#") + "K";    
+        else 
+            result = absScore.ToString(); 
+
+        return isNegative ? "-" + result : result;
     }
 
     public void UpdateHUDScore(int currentScore, int targetMilestoneScore)
     {
-        string formattedCurrent = FormatScore(currentScore);
-        string formattedTarget = FormatScore(targetMilestoneScore);
+        targetScoreValue = currentScore;
 
-        if (scoreValueText != null) scoreValueText.text = formattedCurrent;
+        if (scoreLerpCoroutine != null) StopCoroutine(scoreLerpCoroutine);
+        scoreLerpCoroutine = StartCoroutine(LerpScoreText(targetScoreValue, targetMilestoneScore));
+
+        string formattedTarget = FormatScore(targetMilestoneScore);
         if (scoreMaxText != null) scoreMaxText.text = formattedTarget;
 
-        // --- LOGIKA DYNAMIC FONT SCALING ---
+        if (targetMilestoneScore > 0)
+        {
+            if (lastMilestoneScore != 0 && targetMilestoneScore > lastMilestoneScore)
+            {
+                isWrappingAround = true;
+                if (celebrationCoroutine != null) StopCoroutine(celebrationCoroutine);
+                celebrationCoroutine = StartCoroutine(CelebrateMilestoneRoutine());
+            }
+            
+            lastMilestoneScore = targetMilestoneScore;
+            
+            actualTargetFill = Mathf.Clamp01((float)Mathf.Max(0, currentScore) / targetMilestoneScore);
+            
+            if (!isPreviewing) 
+            {
+                mainTargetFill = actualTargetFill;
+            }
+        }
+    }
+
+    private IEnumerator LerpScoreText(int endScore, int targetMilestoneScore)
+    {
+        float duration = 0.3f;
+        float elapsed = 0f;
+        int startScore = displayedScore;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            
+            displayedScore = Mathf.RoundToInt(Mathf.Lerp(startScore, endScore, t));
+            UpdateTextVisuals(displayedScore, targetMilestoneScore);
+            yield return null;
+        }
+
+        displayedScore = endScore;
+        UpdateTextVisuals(displayedScore, targetMilestoneScore);
+    }
+
+    private void UpdateTextVisuals(int currentDisplayScore, int targetMilestoneScore)
+    {
+        string formattedCurrent = FormatScore(currentDisplayScore);
+        string formattedTarget = FormatScore(targetMilestoneScore);
+
+        if (scoreValueText != null) 
+        {
+            scoreValueText.text = formattedCurrent;
+            scoreValueText.color = currentDisplayScore < 0 ? negativeScoreColor : originalTextColor; 
+        }
+
         int maxCharLength = Mathf.Max(formattedCurrent.Length, formattedTarget.Length);
         int reductionSteps = Mathf.Max(0, maxCharLength - safeCharacterLimit);
 
@@ -105,21 +213,6 @@ public class UIManager : MonoBehaviour
             scoreValueText.fontSize = valueBaseSize - (reductionSteps * sizeReductionPerChar);
         if (scoreMaxText != null) 
             scoreMaxText.fontSize = maxBaseSize - (reductionSteps * sizeReductionPerChar);
-
-        // --- LOGIKA RADIAL & ANIMASI ---
-        if (radialScoreFill != null && targetMilestoneScore > 0)
-        {
-            if (lastMilestoneScore != 0 && targetMilestoneScore > lastMilestoneScore)
-            {
-                isWrappingAround = true;
-                
-                if (celebrationCoroutine != null) StopCoroutine(celebrationCoroutine);
-                celebrationCoroutine = StartCoroutine(CelebrateMilestoneRoutine());
-            }
-            
-            lastMilestoneScore = targetMilestoneScore;
-            targetFillAmount = (float)currentScore / targetMilestoneScore;
-        }
     }
 
     private IEnumerator CelebrateMilestoneRoutine()
@@ -137,19 +230,9 @@ public class UIManager : MonoBehaviour
             float bounceEffect = Mathf.Sin(t * Mathf.PI);
             float currentScale = 1f + (bounceEffect * 0.5f); 
             
-            if (scoreValueText != null) 
-            {
-                scoreValueText.transform.localScale = originalTextScale * currentScale;
-            }
-            if (scoreMaxText != null) 
-            {
-                scoreMaxText.transform.localScale = originalMaxTextScale * currentScale;
-            }
-
-            if (radialScoreFill != null)
-            {
-                radialScoreFill.color = Color.Lerp(milestoneFlashColor, originalFillColor, t);
-            }
+            if (scoreValueText != null) scoreValueText.transform.localScale = originalTextScale * currentScale;
+            if (scoreMaxText != null) scoreMaxText.transform.localScale = originalMaxTextScale * currentScale;
+            if (radialScoreFill != null) radialScoreFill.color = Color.Lerp(milestoneFlashColor, originalFillColor, t);
 
             yield return null;
         }
@@ -164,6 +247,7 @@ public class UIManager : MonoBehaviour
         if (gameOverPanel == null) return;
         gameOverPanel.SetActive(true);
         if (finalScoreText != null) finalScoreText.text = "Score: " + finalScore.ToString(); 
+        
         int highScore = PlayerPrefs.GetInt("HighScore", 0);
         if (finalScore > highScore)
         {
@@ -177,5 +261,51 @@ public class UIManager : MonoBehaviour
     {
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    public void ShowScorePreview(int currentScore, int estimatedScore, int targetScore)
+    {
+        if (targetScore <= 0) targetScore = 1;
+
+        isPreviewing = true; 
+        if (scorePreviewFill != null && !scorePreviewFill.gameObject.activeSelf)
+        {
+            scorePreviewFill.gameObject.SetActive(true);
+            scorePreviewFill.fillAmount = scoreFill != null ? scoreFill.fillAmount : 0f;
+        }
+
+        int predictedScore = Mathf.Max(0, currentScore + estimatedScore);
+        int safeCurrentScore = Mathf.Max(0, currentScore);
+
+        float currentFill = Mathf.Clamp01((float)safeCurrentScore / targetScore);
+        float predictedFill = Mathf.Clamp01((float)predictedScore / targetScore);
+
+        if (estimatedScore > 0)
+        {
+            mainTargetFill = currentFill;      
+            ghostTargetFill = predictedFill;    
+
+            if (scorePreviewFill != null) scorePreviewFill.color = positivePreviewColor;
+        }
+        else if (estimatedScore < 0)
+        {
+            mainTargetFill = predictedFill;     
+            ghostTargetFill = currentFill;     
+
+            if (scorePreviewFill != null) scorePreviewFill.color = negativePreviewColor; 
+        }
+        else 
+        {
+            mainTargetFill = currentFill;
+            ghostTargetFill = currentFill;
+            if (scorePreviewFill != null) scorePreviewFill.gameObject.SetActive(false);
+        }
+    }
+
+    public void HideScorePreview()
+    {
+        isPreviewing = false; 
+        if (scorePreviewFill != null) scorePreviewFill.gameObject.SetActive(false);
+        mainTargetFill = actualTargetFill;
     }
 }

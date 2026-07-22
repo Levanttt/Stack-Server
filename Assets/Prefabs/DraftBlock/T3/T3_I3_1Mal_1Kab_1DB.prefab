@@ -47,6 +47,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 578ada32be06fb84d996e2224877b95f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  blockIcon: {fileID: 0}
   localTiles:
   - position: {x: 0, y: -1}
     type: 7
@@ -117,7 +118,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: P_Kabel_L
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4377445079770938823, guid: eab8a2d6a9ba39f4586534b06ee268d0, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

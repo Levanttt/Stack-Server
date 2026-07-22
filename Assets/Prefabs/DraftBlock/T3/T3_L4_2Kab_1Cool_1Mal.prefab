@@ -190,12 +190,64 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3969097070812823568, guid: 5e557378204159b4ca697a11740d5f94,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.005684377
+      objectReference: {fileID: 0}
+    - target: {fileID: 3969097070812823568, guid: 5e557378204159b4ca697a11740d5f94,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.039000005
+      objectReference: {fileID: 0}
+    - target: {fileID: 3969097070812823568, guid: 5e557378204159b4ca697a11740d5f94,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.007032544
+      objectReference: {fileID: 0}
+    - target: {fileID: 3969097070812823568, guid: 5e557378204159b4ca697a11740d5f94,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 3969097070812823568, guid: 5e557378204159b4ca697a11740d5f94,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 3969097070812823568, guid: 5e557378204159b4ca697a11740d5f94,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3969097070812823568, guid: 5e557378204159b4ca697a11740d5f94,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3969097070812823568, guid: 5e557378204159b4ca697a11740d5f94,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 90
+      objectReference: {fileID: 0}
+    - target: {fileID: 3969097070812823568, guid: 5e557378204159b4ca697a11740d5f94,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3969097070812823568, guid: 5e557378204159b4ca697a11740d5f94,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4057039521448764847, guid: 5e557378204159b4ca697a11740d5f94,
         type: 3}
       propertyPath: m_Name
       value: P_Kabel_I (1)
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 0}
+    - {fileID: 5144634212368325070, guid: 5e557378204159b4ca697a11740d5f94, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -264,12 +316,40 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3969097070812823568, guid: 5e557378204159b4ca697a11740d5f94,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 3969097070812823568, guid: 5e557378204159b4ca697a11740d5f94,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 3969097070812823568, guid: 5e557378204159b4ca697a11740d5f94,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3969097070812823568, guid: 5e557378204159b4ca697a11740d5f94,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3969097070812823568, guid: 5e557378204159b4ca697a11740d5f94,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4057039521448764847, guid: 5e557378204159b4ca697a11740d5f94,
         type: 3}
       propertyPath: m_Name
       value: P_Kabel_I
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 0}
+    - {fileID: 1735539666318848257, guid: 5e557378204159b4ca697a11740d5f94, type: 3}
+    - {fileID: 5144634212368325070, guid: 5e557378204159b4ca697a11740d5f94, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
