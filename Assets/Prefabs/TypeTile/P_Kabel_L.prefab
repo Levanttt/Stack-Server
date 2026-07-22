@@ -129,8 +129,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 7528308030653453765}
   - {fileID: 4663862555165619418}
+  - {fileID: 7528308030653453765}
   - {fileID: 3018119835760933775}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -267,7 +267,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da499b656d5840c498d5ae193b61ed6c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultEulerAngles: {x: 90, y: 0, z: 0}
 --- !u!1001 &5379628010904436277
 PrefabInstance:
   m_ObjectHideFlags: 0

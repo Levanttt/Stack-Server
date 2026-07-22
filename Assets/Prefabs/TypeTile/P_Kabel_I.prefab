@@ -108,7 +108,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3955782053466174749}
-  - component: {fileID: 7900326613669236748}
+  - component: {fileID: 6683243167672433602}
   m_Layer: 0
   m_Name: P_Kabel_I
   m_TagString: Untagged
@@ -134,7 +134,7 @@ Transform:
   - {fileID: 2400084558434026354}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7900326613669236748
+--- !u!114 &6683243167672433602
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -251,32 +251,32 @@ PrefabInstance:
     - target: {fileID: 6001731750869832840, guid: 7797f81eb39939942b82dc0b5d8934d3,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.7071067
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 6001731750869832840, guid: 7797f81eb39939942b82dc0b5d8934d3,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.7071068
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 6001731750869832840, guid: 7797f81eb39939942b82dc0b5d8934d3,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 6001731750869832840, guid: 7797f81eb39939942b82dc0b5d8934d3,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: -0.5
       objectReference: {fileID: 0}
     - target: {fileID: 6001731750869832840, guid: 7797f81eb39939942b82dc0b5d8934d3,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
+      value: 90
       objectReference: {fileID: 0}
     - target: {fileID: 6001731750869832840, guid: 7797f81eb39939942b82dc0b5d8934d3,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
+      value: 90
       objectReference: {fileID: 0}
     - target: {fileID: 6001731750869832840, guid: 7797f81eb39939942b82dc0b5d8934d3,
         type: 3}
@@ -288,11 +288,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: cable I
       objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 8956146570711590297, guid: 7797f81eb39939942b82dc0b5d8934d3, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6341560401506324018, guid: 7797f81eb39939942b82dc0b5d8934d3,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5144634212368325070}
   m_SourcePrefab: {fileID: 100100000, guid: 7797f81eb39939942b82dc0b5d8934d3, type: 3}
 --- !u!4 &3969097070812823568 stripped
 Transform:
@@ -300,3 +303,21 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 7232640243383407768}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &4350125865047677610 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6341560401506324018, guid: 7797f81eb39939942b82dc0b5d8934d3,
+    type: 3}
+  m_PrefabInstance: {fileID: 7232640243383407768}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5144634212368325070
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4350125865047677610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da499b656d5840c498d5ae193b61ed6c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

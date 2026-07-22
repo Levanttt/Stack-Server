@@ -7,7 +7,6 @@ public class PlacementSystem : MonoBehaviour
 {
     [Header("Manager References")]
     public GridManager gridManager;
-    // public ClusterManager clusterManager; // (Catatan: Sudah resmi kita hapus)
     public ScoreManager scoreManager;
     public VirusManager virusManager;
     public BlockQueueManager queueManager;
@@ -57,7 +56,6 @@ public class PlacementSystem : MonoBehaviour
 
         if (queueManager == null) return;
 
-        // Pintasan keyboard untuk memilih kartu dari slot 1, 2, atau 3
         if (Input.GetKeyDown(KeyCode.Alpha1)) queueManager.SelectBlock(0);
         if (Input.GetKeyDown(KeyCode.Alpha2)) queueManager.SelectBlock(1);
         if (Input.GetKeyDown(KeyCode.Alpha3)) queueManager.SelectBlock(2);
@@ -223,7 +221,6 @@ public class PlacementSystem : MonoBehaviour
         Collider[] colliders = previewObject.GetComponentsInChildren<Collider>();
         foreach (Collider col in colliders) Destroy(col);
 
-        // Bersihkan VFX dan Ikon Virus dari Hologram agar tidak muncul saat preview
         TileVFX[] vfxComponents = previewObject.GetComponentsInChildren<TileVFX>();
         foreach (TileVFX vfx in vfxComponents)
         {
@@ -241,8 +238,17 @@ public class PlacementSystem : MonoBehaviour
     {
         if (previewObject == null) return;
         Material targetMat = isValid ? validMaterial : invalidMaterial;
+        
         MeshRenderer[] renderers = previewObject.GetComponentsInChildren<MeshRenderer>();
-        foreach (MeshRenderer r in renderers) r.material = targetMat;
+        foreach (MeshRenderer r in renderers) 
+        {
+            Material[] holoMaterials = new Material[r.sharedMaterials.Length];
+            for (int i = 0; i < holoMaterials.Length; i++)
+            {
+                holoMaterials[i] = targetMat;
+            }
+            r.materials = holoMaterials;
+        }
     }
 
     private void HidePreview()
@@ -268,23 +274,18 @@ public class PlacementSystem : MonoBehaviour
             if (gridManager != null) gridManager.AddTileToGrid(worldPos, tile.type, newBlock);
         }
 
-        // --- SISTEM UPDATE ---
-        
-        // 1. Cek Virus & Netralisasi
         if (virusManager != null) 
         {
             virusManager.NeutralizeVirus();
             virusManager.UpdateInfectionVisuals();
         }
         
-        // 2. Cek Suhu (AC vs Overheat) lalu Hitung Skor
         if (scoreManager != null) 
         {
             scoreManager.UpdateOverheatStatus(); 
             scoreManager.CalculateScore();       
         }
         
-        // 3. Proses Antrean Blok & Game Over Check
         if (queueManager != null) 
         {
             queueManager.OnBlockPlacedSuccessfully();

@@ -37,17 +37,14 @@ public class UIManager : MonoBehaviour
     public GameObject gameOverPanel;
     public TextMeshProUGUI finalScoreText;
     public TextMeshProUGUI highScoreText;
-
-    // --- SISTEM TARGET BAR BARU (Anti-Glitch) ---
-    private float actualTargetFill = 0f; // Target asli (Skor murni)
-    private float mainTargetFill = 0f;   // Target untuk bar biru (Bisa menciut saat preview minus)
-    private float ghostTargetFill = 0f;  // Target untuk bar bayangan
+    private float actualTargetFill = 0f; 
+    private float mainTargetFill = 0f;   
+    private float ghostTargetFill = 0f;  
 
     private int lastMilestoneScore = 0;
     private bool isWrappingAround = false;
     private bool isPreviewing = false; 
 
-    // Variabel pegas untuk pergerakan mulus
     private float radialVelocity = 0f;
     private float linearVelocity = 0f;
     private float ghostVelocity = 0f;
@@ -111,7 +108,6 @@ public class UIManager : MonoBehaviour
             if (radialDone && linearDone) 
             {
                 isWrappingAround = false;
-                // Reset ke 0 secara instan agar animasi ronde selanjutnya mulai dari bawah
                 if (scoreFill != null) scoreFill.fillAmount = 0f;
                 if (radialScoreFill != null) radialScoreFill.fillAmount = 0f;
                 linearVelocity = 0f;
@@ -120,15 +116,12 @@ public class UIManager : MonoBehaviour
         }
         else
         {
-            // --- KUNCI ANTI-GLITCH ---
-            // Bar utama SELALU bergerak mulus mengejar 'mainTargetFill', tidak pernah dipaksa instan!
             if (radialScoreFill != null)
                 radialScoreFill.fillAmount = Mathf.SmoothDamp(radialScoreFill.fillAmount, mainTargetFill, ref radialVelocity, barSmoothTime);
             
             if (scoreFill != null)
                 scoreFill.fillAmount = Mathf.SmoothDamp(scoreFill.fillAmount, mainTargetFill, ref linearVelocity, barSmoothTime);
 
-            // Bar bayangan juga bergerak mulus mengejar targetnya sendiri
             if (isPreviewing && scorePreviewFill != null && scorePreviewFill.gameObject.activeSelf)
             {
                 scorePreviewFill.fillAmount = Mathf.SmoothDamp(scorePreviewFill.fillAmount, ghostTargetFill, ref ghostVelocity, barSmoothTime * 0.8f);
@@ -173,10 +166,8 @@ public class UIManager : MonoBehaviour
             
             lastMilestoneScore = targetMilestoneScore;
             
-            // Simpan target posisi bar yang murni dari sistem skor saat ini
             actualTargetFill = Mathf.Clamp01((float)Mathf.Max(0, currentScore) / targetMilestoneScore);
             
-            // Jika pemain sedang TIDAK melihat preview, sinkronkan target utamanya
             if (!isPreviewing) 
             {
                 mainTargetFill = actualTargetFill;
@@ -272,17 +263,11 @@ public class UIManager : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    // =========================================================
-    // --- GHOST PREVIEW BAR (ANTI-GLITCH VERSION) ---
-    // =========================================================
     public void ShowScorePreview(int currentScore, int estimatedScore, int targetScore)
     {
         if (targetScore <= 0) targetScore = 1;
 
         isPreviewing = true; 
-
-        // Munculkan bar bayangan dan "tancapkan" di posisi bar utama sekarang
-        // agar dia memanjang/berubah dengan mulus, tidak tiba-tiba terbang dari angka 0.
         if (scorePreviewFill != null && !scorePreviewFill.gameObject.activeSelf)
         {
             scorePreviewFill.gameObject.SetActive(true);
@@ -297,23 +282,20 @@ public class UIManager : MonoBehaviour
 
         if (estimatedScore > 0)
         {
-            // PREDIKSI POSITIF (+)
-            mainTargetFill = currentFill;       // Bar biru diam di tempat
-            ghostTargetFill = predictedFill;    // Bar bayangan memanjang ke depan mengejar bonus
+            mainTargetFill = currentFill;      
+            ghostTargetFill = predictedFill;    
 
             if (scorePreviewFill != null) scorePreviewFill.color = positivePreviewColor;
         }
         else if (estimatedScore < 0)
         {
-            // PREDIKSI NEGATIF (-)
-            mainTargetFill = predictedFill;     // Bar biru menciut ke belakang menjauhi bahaya!
-            ghostTargetFill = currentFill;      // Bar bayangan (merah) menetap di titik saat ini untuk menyoroti kerugian
+            mainTargetFill = predictedFill;     
+            ghostTargetFill = currentFill;     
 
             if (scorePreviewFill != null) scorePreviewFill.color = negativePreviewColor; 
         }
         else 
         {
-            // PREDIKSI NOL
             mainTargetFill = currentFill;
             ghostTargetFill = currentFill;
             if (scorePreviewFill != null) scorePreviewFill.gameObject.SetActive(false);
@@ -324,8 +306,6 @@ public class UIManager : MonoBehaviour
     {
         isPreviewing = false; 
         if (scorePreviewFill != null) scorePreviewFill.gameObject.SetActive(false);
-
-        // Kembalikan target bar utama ke skor asli saat mouse dialihkan atau saat blok selesai ditaruh
         mainTargetFill = actualTargetFill;
     }
 }

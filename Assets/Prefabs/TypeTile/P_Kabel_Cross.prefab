@@ -108,7 +108,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3955782053466174749}
-  - component: {fileID: 7605749191762639383}
+  - component: {fileID: 6411689609437665488}
   m_Layer: 0
   m_Name: P_Kabel_Cross
   m_TagString: Untagged
@@ -134,7 +134,7 @@ Transform:
   - {fileID: 8995020322381654496}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7605749191762639383
+--- !u!114 &6411689609437665488
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -251,7 +251,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da499b656d5840c498d5ae193b61ed6c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultEulerAngles: {x: 90, y: 0, z: 0}
 --- !u!4 &1788114714959927998 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2771768098922815797, guid: c6bbaca923872e049b98f236b1a4b538,

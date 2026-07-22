@@ -174,7 +174,6 @@ public class ScoreManager : MonoBehaviour
 
     public void UpdateOverheatStatus()
     {
-        // 1. Kumpulkan posisi semua AC di lantai
         List<Vector2Int> acPositions = new List<Vector2Int>();
         foreach (var kvp in gridManager.gridMap)
         {
@@ -184,7 +183,6 @@ public class ScoreManager : MonoBehaviour
             }
         }
 
-        // 2. Cari semua grup Server menggunakan pelacakan sederhana (BFS)
         HashSet<Vector2Int> visitedDatabases = new HashSet<Vector2Int>();
         Vector2Int[] dirs4 = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
 
@@ -217,10 +215,8 @@ public class ScoreManager : MonoBehaviour
                     }
                 }
 
-                // 3. Grup ini terancam Overheat HANYA JIKA berisi 3 Server atau lebih
                 bool isGroupOverheating = currentGroup.Count >= 3;
 
-                // 4. Terapkan status suhu ke setiap Server di dalam grup ini
                 foreach (Vector2Int serverPos in currentGroup)
                 {
                     bool isOverheating = false;
@@ -243,24 +239,17 @@ public class ScoreManager : MonoBehaviour
                         }
                     }
 
-                    // =========================================================
-                    // 5. FIX BUG VISUAL: Cocokkan posisi 3D VFX dengan posisi Grid
-                    // =========================================================
                     if (gridManager.gridMap.TryGetValue(serverPos, out TileData sData))
                     {
                         if (sData.tileObject != null)
                         {
-                            // Ambil SEMUA komponen TileVFX yang ada di dalam blok prefab ini
                             TileVFX[] allVFX = sData.tileObject.GetComponentsInChildren<TileVFX>();
                             
                             foreach (TileVFX vfx in allVFX)
                             {
-                                // Ubah posisi 3D anak/cube tersebut menjadi kordinat Grid
-                                // (Asumsi nilai cellSize kamu = 1f)
                                 int vfxGridX = Mathf.RoundToInt(vfx.transform.position.x);
                                 int vfxGridY = Mathf.RoundToInt(vfx.transform.position.z);
                                 
-                                // Jika koordinatnya SAMA PERSIS dengan server yang sedang dicek, nyalakan!
                                 if (vfxGridX == serverPos.x && vfxGridY == serverPos.y)
                                 {
                                     vfx.SetOverheatStatus(isOverheating);
@@ -268,7 +257,6 @@ public class ScoreManager : MonoBehaviour
                             }
                         }
                     }
-                    // =========================================================
                 }
             }
         }
@@ -320,95 +308,72 @@ public class ScoreManager : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
             
-            // Kurva PingPong: 0 -> 1 -> 0
             float scaleMultiplier = Mathf.PingPong(t * 2f, 1f);
-            scaleMultiplier = scaleMultiplier * scaleMultiplier * (3f - 2f * scaleMultiplier); // Smoothstep
+            scaleMultiplier = scaleMultiplier * scaleMultiplier * (3f - 2f * scaleMultiplier);
             
             foreach (Transform child in tilesInLine)
             {
                 if (child != null) 
                 {
                     Vector3 baseScale = originalScales[child];
-                    Vector3 popScale = baseScale * 1.4f; // Membesar 40% dari ukuran aslinya
-                    
-                    // Skalakan HANYA balok 1x1 tersebut
+                    Vector3 popScale = baseScale * 1.4f; 
                     child.localScale = Vector3.Lerp(baseScale, popScale, scaleMultiplier);
                 }
             }
             yield return null;
         }
 
-        // Pastikan kembali ke ukuran normal di akhir animasi
         foreach (Transform child in tilesInLine)
         {
             if (child != null) child.localScale = originalScales[child];
         }
     }
 
-    // --- FUNGSI HELPER BARU: Mencari 1x1 spesifik di dalam blok besar (misal blok bentuk L) ---
     private Transform GetSpecificTileTransform(GameObject parentBlock, Vector2Int gridPos)
     {
         if (parentBlock == null) return null;
-
-        // Hitung target posisi dunia (World Position) yang seharusnya untuk gridPos ini
         float targetX = gridPos.x * gridManager.cellSize;
         float targetZ = gridPos.y * gridManager.cellSize;
-        float tolerance = gridManager.cellSize * 0.4f; // Toleransi jarak geser
+        float tolerance = gridManager.cellSize * 0.4f; 
 
-        // Cari semua komponen visual (MeshRenderer) di dalam blok besar ini
         MeshRenderer[] renderers = parentBlock.GetComponentsInChildren<MeshRenderer>();
         
         foreach (MeshRenderer rend in renderers)
         {
-            // Cek apakah posisi kotak visual ini cocok dengan target koordinat di lantai
             if (Mathf.Abs(rend.transform.position.x - targetX) < tolerance &&
                 Mathf.Abs(rend.transform.position.z - targetZ) < tolerance)
             {
-                return rend.transform; // Ketemu! Ini bagian spesifik 1x1 yang harus melompat
+                return rend.transform; 
             }
         }
-
-        // Kalau gagal (misal untuk balok 1x1 murni yang tidak punya anak GameObject), kembalikan utuh
         return parentBlock.transform;
     }
 
-    // ==============================================================================
-    // SISTEM PREDIKSI SKOR (SIMULASI MASA DEPAN)
-    // ==============================================================================
-    // ==============================================================================
-    // SISTEM PREDIKSI SKOR (UNTUK TEKS PREVIEW & GHOST BAR)
-    // ==============================================================================
     public int GetEstimatedPlacementScore(Vector2Int baseGridPos, List<TileOccupancy> rotatedTiles)
     {
-        // 1. Buat Lantai Virtual (Masa Depan) = Lantai Asli + Blok Hologram
         Dictionary<Vector2Int, GridTileType> virtualGrid = new Dictionary<Vector2Int, GridTileType>();
         foreach (var kvp in gridManager.gridMap) virtualGrid[kvp.Key] = kvp.Value.type;
 
         foreach (TileOccupancy tile in rotatedTiles)
         {
             Vector2Int worldPos = baseGridPos + tile.position;
-            // Jika ditaruh di luar batas atau menabrak blok lain, prediksi skor = 0
             if (virtualGrid.ContainsKey(worldPos)) return 0; 
             virtualGrid[worldPos] = tile.type;
         }
 
-        // 2. Buat Lantai Virtual (Saat Ini) = Hanya Lantai Asli
         Dictionary<Vector2Int, GridTileType> currentGrid = new Dictionary<Vector2Int, GridTileType>();
         foreach (var kvp in gridManager.gridMap) currentGrid[kvp.Key] = kvp.Value.type;
 
-        // 3. Simulasikan dan bandingkan skornya
         int futureScore = CalculateVirtualGridScore(virtualGrid);
         int currentScore = CalculateVirtualGridScore(currentGrid);
 
-        return futureScore - currentScore; // Selisihnya adalah prediksi bonus murni!
+        return futureScore - currentScore; 
     }
 
-    // Fungsi Pembantu: Simulasi Masa Depan
     private int CalculateVirtualGridScore(Dictionary<Vector2Int, GridTileType> tempGrid)
     {
         int tempScore = 0;
 
-        // A. SIMULASI OVERHEAT & VIRUS (Kumpulkan Data)
         HashSet<Vector2Int> overheatedTiles = new HashSet<Vector2Int>();
         List<Vector2Int> acPositions = new List<Vector2Int>();
         List<Vector2Int> firewallPositions = new List<Vector2Int>();
@@ -424,7 +389,6 @@ public class ScoreManager : MonoBehaviour
             if (kvp.Value == GridTileType.Firewall) firewallPositions.Add(kvp.Key);
         }
 
-        // Cari grup Server yang kepanasan
         foreach (var kvp in tempGrid)
         {
             if (kvp.Value == GridTileType.Database && !visitedDB.Contains(kvp.Key))
@@ -467,7 +431,6 @@ public class ScoreManager : MonoBehaviour
             }
         }
 
-        // Cari Virus yang dimatikan
         foreach (Vector2Int fPos in firewallPositions)
         {
             foreach (Vector2Int dir in dirs8)
@@ -477,7 +440,6 @@ public class ScoreManager : MonoBehaviour
             }
         }
 
-        // B. HITUNG BASE SKOR (Posisi, Tetangga, Penalti)
         foreach (var kvp in tempGrid)
         {
             Vector2Int pos = kvp.Key;
@@ -521,17 +483,12 @@ public class ScoreManager : MonoBehaviour
             }
         }
 
-        // =========================================================
-        // C. SIMULASI BONUS TETRIS (LINE CLEAR)
-        // =========================================================
         int projectedFullLines = 0;
 
-        // 1. Ramal Baris Horizontal (Row)
         for (int y = gridManager.minY; y < gridManager.maxY; y++)
         {
             string lineKey = $"Row_{y}_Bounds_{gridManager.minX}_to_{gridManager.maxX}";
             
-            // Jangan hitung garis yang sudah pecah di masa lalu!
             if (!claimedLines.Contains(lineKey))
             {
                 bool isRowFull = true;
@@ -547,7 +504,6 @@ public class ScoreManager : MonoBehaviour
             }
         }
 
-        // 2. Ramal Kolom Vertikal (Col)
         for (int x = gridManager.minX; x < gridManager.maxX; x++)
         {
             string lineKey = $"Col_{x}_Bounds_{gridManager.minY}_to_{gridManager.maxY}";

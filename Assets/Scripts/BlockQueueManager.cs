@@ -148,7 +148,7 @@ public class BlockQueueManager : MonoBehaviour
             {
                 if (oldSlot != newSlot) 
                 {
-                    flights.Add(StartCoroutine(PlayCardAppear(sprite, cardFrames[oldSlot].position, cardFrames[newSlot].position, newSlot)));
+                    flights.Add(StartCoroutine(PlayCardAppear(sprite, cardFrames[oldSlot].position, cardFrames[newSlot].position, newSlot, false)));
                 } 
                 else 
                 {
@@ -158,7 +158,7 @@ public class BlockQueueManager : MonoBehaviour
             else
             {
                 Vector3 startPos = deckSpawnPoint != null ? deckSpawnPoint.position : cardFrames[0].position;
-                flights.Add(StartCoroutine(PlayCardAppear(sprite, startPos, cardFrames[newSlot].position, newSlot)));
+                flights.Add(StartCoroutine(PlayCardAppear(sprite, startPos, cardFrames[newSlot].position, newSlot, true)));
             }
         }
 
@@ -325,7 +325,6 @@ public class BlockQueueManager : MonoBehaviour
             }
         }
 
-        // --- HAPUS ANIMASI MENGECIL: LANGSUNG HILANG INSTAN ---
         if (cardFrames[usedSlotIndex] != null)
         {
             cardFrames[usedSlotIndex].gameObject.SetActive(false);
@@ -335,6 +334,8 @@ public class BlockQueueManager : MonoBehaviour
                 slotImages[usedSlotIndex].color = new Color(1f, 1f, 1f, 0f);
             }
         }
+
+        yield return new WaitForSeconds(0.2f); 
 
         activeHand[usedSlotIndex] = null;
         GameObject incomingBlock = currentDeck.Count > 0 ? currentDeck.Peek() : null;
@@ -351,21 +352,19 @@ public class BlockQueueManager : MonoBehaviour
 
         List<Coroutine> flights = new List<Coroutine>();
 
-        // 1. Animasi Kartu Lama yang Bergeser
         foreach (CardMove move in movers)
         {
             Vector3 startPos = cardFrames[move.toSlot - 1].position;
-            flights.Add(StartCoroutine(PlayCardAppear(move.sprite, startPos, cardFrames[move.toSlot].position, move.toSlot)));
+            flights.Add(StartCoroutine(PlayCardAppear(move.sprite, startPos, cardFrames[move.toSlot].position, move.toSlot, false)));
         }
 
-        // 2. Animasi Kartu Baru dari DeckSpawnPoint
         if (newCardArrived)
         {
             BlockData incomingData = incomingBlock.GetComponent<BlockData>();
             Sprite newSprite = incomingData != null ? incomingData.blockIcon : null;
 
             Vector3 startPos = deckSpawnPoint != null ? deckSpawnPoint.position : cardFrames[0].position;
-            flights.Add(StartCoroutine(PlayCardAppear(newSprite, startPos, cardFrames[0].position, 0)));
+            flights.Add(StartCoroutine(PlayCardAppear(newSprite, startPos, cardFrames[0].position, 0, true)));
         }
 
         foreach (Coroutine flight in flights) yield return flight;
@@ -390,7 +389,7 @@ public class BlockQueueManager : MonoBehaviour
         return ghost;
     }
 
-    private IEnumerator PlayCardAppear(Sprite sprite, Vector3 fromWorldPos, Vector3 toWorldPos, int targetSlot)
+    private IEnumerator PlayCardAppear(Sprite sprite, Vector3 fromWorldPos, Vector3 toWorldPos, int targetSlot, bool isNewCard)
     {
         if (sprite == null || flyingIconPrefab == null)
         {
@@ -399,7 +398,9 @@ public class BlockQueueManager : MonoBehaviour
         }
 
         Image ghost = SpawnGhost(sprite, fromWorldPos);
-        ghost.rectTransform.localScale = Vector3.one * cardPopStartScale;
+        
+        float initialScale = isNewCard ? cardPopStartScale : 1f;
+        ghost.rectTransform.localScale = Vector3.one * initialScale;
 
         float elapsed = 0f;
         while (elapsed < cardAppearDuration)
@@ -409,7 +410,8 @@ public class BlockQueueManager : MonoBehaviour
             float smoothT = 1f - Mathf.Pow(1f - t, 3f); 
 
             ghost.rectTransform.position = Vector3.Lerp(fromWorldPos, toWorldPos, smoothT);
-            float currentScale = Mathf.Lerp(cardPopStartScale, 1f, smoothT);
+            
+            float currentScale = Mathf.Lerp(initialScale, 1f, smoothT);
             ghost.rectTransform.localScale = Vector3.one * currentScale;
 
             yield return null;

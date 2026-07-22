@@ -195,7 +195,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: P_Kabel_L
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4377445079770938823, guid: eab8a2d6a9ba39f4586534b06ee268d0, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -343,7 +344,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: P_Kabel_L (1)
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4377445079770938823, guid: eab8a2d6a9ba39f4586534b06ee268d0, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
