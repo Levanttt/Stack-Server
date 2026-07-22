@@ -10,6 +10,9 @@ public class TileVFX : MonoBehaviour
     [ColorUsage(true, true)]
     public Color overheatGlowColor = new Color(2f, 0f, 0f, 1f);
     public float blinkSpeed = 5f;
+    
+    [Tooltip("Ikon sprite yang muncul saat block ini overheat (kepanasan) saja")]
+    public GameObject overheatIcon; 
 
     public bool isOverheating { get; private set; } = false;
 
@@ -18,7 +21,13 @@ public class TileVFX : MonoBehaviour
 
     [Header("Infection Visuals")]
     public bool isInfected = false;
+    
+    [Tooltip("Ikon sprite yang muncul saat block terinfeksi malware saja")]
     public GameObject warningIcon;
+
+    [Header("Combined Danger Visuals")]
+    [Tooltip("Ikon sprite gabungan saat block terinfeksi SEKALIGUS overheat")]
+    public GameObject combinedDangerIcon; 
 
     private void Awake()
     {
@@ -27,6 +36,8 @@ public class TileVFX : MonoBehaviour
             materials = targetRenderer.materials;
             foreach (Material mat in materials) mat.EnableKeyword("_EMISSION");
         }
+
+        UpdateIconDisplay();
     }
 
     public void SetOverheatStatus(bool state)
@@ -47,6 +58,37 @@ public class TileVFX : MonoBehaviour
                 overheatCoroutine = null;
             }
             ResetGlow();
+        }
+
+        UpdateIconDisplay();
+    }
+
+    public void SetInfectedVisual(bool state)
+    {
+        if (isInfected == state) return;
+        
+        isInfected = state;
+        
+        UpdateIconDisplay();
+    }
+
+    private void UpdateIconDisplay()
+    {
+        if (warningIcon != null) warningIcon.SetActive(false);
+        if (overheatIcon != null) overheatIcon.SetActive(false);
+        if (combinedDangerIcon != null) combinedDangerIcon.SetActive(false);
+
+        if (isOverheating && isInfected)
+        {
+            if (combinedDangerIcon != null) combinedDangerIcon.SetActive(true);
+        }
+        else if (isOverheating)
+        {
+            if (overheatIcon != null) overheatIcon.SetActive(true);
+        }
+        else if (isInfected)
+        {
+            if (warningIcon != null) warningIcon.SetActive(true);
         }
     }
 
@@ -72,16 +114,5 @@ public class TileVFX : MonoBehaviour
     private void ResetGlow()
     {
         SetEmissionColor(Color.black);
-    }
-
-    public void SetInfectedVisual(bool state)
-    {
-        isInfected = state;
-        
-        if (warningIcon != null)
-        {
-            // Nyalakan ikon jika terinfeksi, matikan jika aman
-            warningIcon.SetActive(isInfected);
-        }
     }
 }

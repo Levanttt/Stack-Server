@@ -295,27 +295,38 @@ public class PlacementSystem : MonoBehaviour
 
             if (isGameOver)
             {
+                ScoreManager.Instance.CheckAndSaveHighScore();
+                
                 if (UIManager.Instance != null) UIManager.Instance.ShowGameOverPanel(scoreManager.totalScore);
                 if (GameStateManager.Instance != null) GameStateManager.Instance.ChangeState(GameState.GameOver);
             }
         }
     }
 
-    private bool CheckForGameOver(List<GameObject> availableBlockPrefabs)
+    // 1. UBAH DARI PRIVATE MENJADI PUBLIC
+    public bool CheckForGameOver(List<GameObject> availableBlockPrefabs)
     {
         if (gridManager == null || availableBlockPrefabs.Count == 0) return true;
 
         List<Vector2Int> emptyTiles = new List<Vector2Int>();
         foreach (Vector2Int floorPos in gridManager.floorGrid.Keys)
         {
-            if (!gridData.ContainsKey(floorPos)) emptyTiles.Add(floorPos);
+            // Tambahkan pengecekan gridMap juga, berjaga-jaga jika Virus di-spawn oleh sistem, bukan player
+            if (!gridData.ContainsKey(floorPos) && !gridManager.gridMap.ContainsKey(floorPos)) 
+                emptyTiles.Add(floorPos);
         }
 
         foreach (GameObject prefab in availableBlockPrefabs)
         {
             if (prefab == null) continue;
             BlockData blockData = prefab.GetComponent<BlockData>();
-            if (blockData == null) continue;
+            
+            // JIKA VIRUS/FIREWALL TIDAK PUNYA BLOCKDATA, JANGAN DI-SKIP, TAPI ANGGAP SEBAGAI TILE 1x1
+            if (blockData == null) 
+            {
+                if (emptyTiles.Count > 0) return false; 
+                continue;
+            }
 
             float[] rotations = { 0f, 90f, 180f, 270f };
             foreach (float rot in rotations)
@@ -327,16 +338,17 @@ public class PlacementSystem : MonoBehaviour
                     foreach (TileOccupancy tile in rotatedTiles)
                     {
                         Vector2Int checkPos = basePos + tile.position;
-                        if (gridData.ContainsKey(checkPos) || !gridManager.floorGrid.ContainsKey(checkPos))
+                        // Tambahkan gridManager.gridMap.ContainsKey agar tabrakan dengan Virus terbaca
+                        if (gridData.ContainsKey(checkPos) || (gridManager != null && gridManager.gridMap.ContainsKey(checkPos)) || !gridManager.floorGrid.ContainsKey(checkPos))
                         {
                             canPlaceThis = false;
                             break;
                         }
                     }
-                    if (canPlaceThis) return false;
+                    if (canPlaceThis) return false; // Masih ada tempat! Permainan jalan terus.
                 }
             }
         }
-        return true; 
+        return true; // Mentok! Panggil Game Over.
     }
 }
