@@ -5370,11 +5370,6 @@ MonoBehaviour:
   unlockTiers:
   - unlockAtMilestoneLevel: 0
     blockPrefabs:
-    - {fileID: 9061752124628261919, guid: cf4ab7e56645607429483af99cfa2a04, type: 3}
-    - {fileID: 984611409674777683, guid: 6c9f281807da8cd4e9f53867283775c4, type: 3}
-    - {fileID: 984611409674777683, guid: 6c9f281807da8cd4e9f53867283775c4, type: 3}
-  - unlockAtMilestoneLevel: 2
-    blockPrefabs:
     - {fileID: 1723576140274917757, guid: 74467c6d0f6eca84eae5b894223ed9f8, type: 3}
     - {fileID: 1723576140274917757, guid: ce9e785bb804d224e92c2455d784d0a2, type: 3}
     - {fileID: 2563415791150352903, guid: 309c1d9eafaa8ef47b5fb10c7184e938, type: 3}
