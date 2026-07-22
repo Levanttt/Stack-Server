@@ -7,7 +7,7 @@ public class PlacementSystem : MonoBehaviour
 {
     [Header("Manager References")]
     public GridManager gridManager;
-    public ClusterManager clusterManager;
+    // public ClusterManager clusterManager; // (Catatan: Sudah resmi kita hapus)
     public ScoreManager scoreManager;
     public VirusManager virusManager;
     public BlockQueueManager queueManager;
@@ -22,7 +22,6 @@ public class PlacementSystem : MonoBehaviour
     public Material invalidMaterial;
     public TextMeshPro staticPreviewText; 
     
-    // --- UBAH BAGIANDI SINI ---
     [Header("Dynamic Offset Settings")]
     [Tooltip("Offset standar untuk ukuran ganjil (1, 3, dst) atau default")]
     public Vector3 defaultTextOffset = new Vector3(0f, 2f, 0f); 
@@ -30,9 +29,7 @@ public class PlacementSystem : MonoBehaviour
     [Tooltip("Offset khusus untuk blok ukuran 2 (Double Block)")]
     public Vector3 doubleBlockTextOffset = new Vector3(-0.5f, 2f, 0f);
 
-    // Variabel internal untuk menyimpan offset yang sedang dipakai
     private Vector3 currentDynamicTextOffset; 
-    // ---------------------------
 
     private GameObject previewObject;
     private GameObject lastBlockPrefab;
@@ -60,6 +57,7 @@ public class PlacementSystem : MonoBehaviour
 
         if (queueManager == null) return;
 
+        // Pintasan keyboard untuk memilih kartu dari slot 1, 2, atau 3
         if (Input.GetKeyDown(KeyCode.Alpha1)) queueManager.SelectBlock(0);
         if (Input.GetKeyDown(KeyCode.Alpha2)) queueManager.SelectBlock(1);
         if (Input.GetKeyDown(KeyCode.Alpha3)) queueManager.SelectBlock(2);
@@ -146,10 +144,7 @@ public class PlacementSystem : MonoBehaviour
                     if (staticPreviewText != null)
                     {
                         staticPreviewText.gameObject.SetActive(true);
-                        
-                        // --- GUNAKAN OFFSET DINAMIS DI SINI ---
                         staticPreviewText.transform.position = previewObject.transform.position + currentDynamicTextOffset;
-                        // --------------------------------------
                         
                         if (Camera.main != null) staticPreviewText.transform.rotation = Camera.main.transform.rotation;
                         
@@ -172,7 +167,7 @@ public class PlacementSystem : MonoBehaviour
             {
                 if (staticPreviewText != null) staticPreviewText.gameObject.SetActive(false);
                 lastHoveredPos = new Vector2Int(-999, -999);
-
+                
                 if (UIManager.Instance != null) UIManager.Instance.HideScorePreview();
             }
 
@@ -180,11 +175,10 @@ public class PlacementSystem : MonoBehaviour
             {
                 int finalScoreGained = scoreManager.GetEstimatedPlacementScore(baseGridPos, rotatedTiles);
                 
-                // --- GUNAKAN OFFSET DINAMIS DI SINI JUGA ---
                 Vector3 popUpPos = previewObject.transform.position + currentDynamicTextOffset;
-                // -------------------------------------------
                 
-                FloatingTextManager.Instance.SpawnPreviewScore(popUpPos, finalScoreGained);
+                if (FloatingTextManager.Instance != null) 
+                    FloatingTextManager.Instance.SpawnPreviewScore(popUpPos, finalScoreGained);
 
                 PlaceBlock(baseGridPos, rotatedTiles);
                 HidePreview();
@@ -202,31 +196,23 @@ public class PlacementSystem : MonoBehaviour
         if (previewObject != null) Destroy(previewObject);
         if (blockPrefab == null) return;
 
-        // =========================================================
-        // --- SISTEM PENDETEKSI UKURAN OTOMATIS (BARU) ---
-        // =========================================================
         BlockData dataForOffset = blockPrefab.GetComponent<BlockData>();
         if (dataForOffset != null)
         {
-            // Cek berapa jumlah kotak (tile) di dalam blok ini
             int blockSize = dataForOffset.localTiles.Count;
-
-            // Jika ukurannya 2, pakai offset khusus yang kamu temukan
             if (blockSize == 2)
             {
                 currentDynamicTextOffset = doubleBlockTextOffset;
             }
             else
             {
-                // Selain ukuran 2 (1, 3, 4, dst), pakai default (0, 2, 0)
                 currentDynamicTextOffset = defaultTextOffset;
             }
         }
         else
         {
-            currentDynamicTextOffset = defaultTextOffset; // Backup
+            currentDynamicTextOffset = defaultTextOffset; 
         }
-        // =========================================================
 
         currentRotation = 0f;
         previewObject = Instantiate(blockPrefab);
@@ -236,11 +222,21 @@ public class PlacementSystem : MonoBehaviour
         Destroy(previewObject.GetComponent<BlockData>());
         Collider[] colliders = previewObject.GetComponentsInChildren<Collider>();
         foreach (Collider col in colliders) Destroy(col);
+
+        // Bersihkan VFX dan Ikon Virus dari Hologram agar tidak muncul saat preview
+        TileVFX[] vfxComponents = previewObject.GetComponentsInChildren<TileVFX>();
+        foreach (TileVFX vfx in vfxComponents)
+        {
+            if (vfx.warningIcon != null)
+            {
+                Destroy(vfx.warningIcon);
+            }
+            Destroy(vfx);
+        }
         
         lastHoveredPos = new Vector2Int(-999, -999); 
     }
 
-    //... (Sisa script ke bawah sama persis seperti sebelumnya)
     private void SetPreviewColor(bool isValid)
     {
         if (previewObject == null) return;
@@ -272,17 +268,27 @@ public class PlacementSystem : MonoBehaviour
             if (gridManager != null) gridManager.AddTileToGrid(worldPos, tile.type, newBlock);
         }
 
-        if (clusterManager != null) clusterManager.CalculateClusters();
+        // --- SISTEM UPDATE ---
+        
+        // 1. Cek Virus & Netralisasi
         if (virusManager != null) 
         {
-            virusManager.NeutralizeVirus(); 
-            virusManager.UpdateInfectionVisuals(); 
+            virusManager.NeutralizeVirus();
+            virusManager.UpdateInfectionVisuals();
         }
-        if (scoreManager != null) scoreManager.CalculateScore();
-        if (queueManager != null) queueManager.OnBlockPlacedSuccessfully();
-
-        if (queueManager != null)
+        
+        // 2. Cek Suhu (AC vs Overheat) lalu Hitung Skor
+        if (scoreManager != null) 
         {
+            scoreManager.UpdateOverheatStatus(); 
+            scoreManager.CalculateScore();       
+        }
+        
+        // 3. Proses Antrean Blok & Game Over Check
+        if (queueManager != null) 
+        {
+            queueManager.OnBlockPlacedSuccessfully();
+
             List<GameObject> currentCards = queueManager.GetCurrentAvailableBlocks();
             bool isGameOver = CheckForGameOver(currentCards);
 

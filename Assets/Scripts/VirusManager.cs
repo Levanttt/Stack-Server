@@ -7,7 +7,6 @@ public class VirusManager : MonoBehaviour
 
     public void NeutralizeVirus()
     {
-        // 1. Cari semua Firewall di grid
         List<Vector2Int> firewallPositions = new List<Vector2Int>();
         foreach (var kvp in gridManager.gridMap)
         {
@@ -15,7 +14,6 @@ public class VirusManager : MonoBehaviour
                 firewallPositions.Add(kvp.Key);
         }
 
-        // 2. Cek 8-arah (Atas, Bawah, Kiri, Kanan, + 4 Diagonal) dari setiap Firewall
         Vector2Int[] dirs8 = { 
             Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right,
             new Vector2Int(1, 1), new Vector2Int(1, -1), new Vector2Int(-1, 1), new Vector2Int(-1, -1)
@@ -26,15 +24,15 @@ public class VirusManager : MonoBehaviour
             foreach (Vector2Int dir in dirs8)
             {
                 Vector2Int targetPos = fPos + dir;
-                if (gridManager.gridMap.ContainsKey(targetPos))
+                if (gridManager.gridMap.TryGetValue(targetPos, out TileData tile))
                 {
-                    TileData tile = gridManager.gridMap[targetPos];
-                    
-                    // Jika itu Malware dan BELUM dinetralisir
                     if (tile.type == GridTileType.Malware && !tile.isNeutralized)
                     {
                         tile.isNeutralized = true;
-                        ApplyNeutralizedVisual(tile.tileObject); // Panggil efek visual
+                        
+                        // FIX BUG: Lempar juga posisi akurat (targetPos) ke fungsi visual
+                        ApplyNeutralizedVisual(tile.tileObject, targetPos); 
+                        
                         Debug.Log($"Malware di {targetPos} berhasil dinetralisir oleh Firewall!");
                     }
                 }
@@ -42,19 +40,29 @@ public class VirusManager : MonoBehaviour
         }
     }
 
-    // --- FUNGSI BARU UNTUK MENGUBAH VISUAL ---
-    private void ApplyNeutralizedVisual(GameObject virusObject)
+    private void ApplyNeutralizedVisual(GameObject rootBlock, Vector2Int malwarePos)
     {
-        if (virusObject == null) return;
+        if (rootBlock == null) return;
 
-        // Bikin visualnya jadi abu-abu kusam (Disable)
-        MeshRenderer[] renderers = virusObject.GetComponentsInChildren<MeshRenderer>();
-        foreach (MeshRenderer r in renderers)
+        // Ambil SEMUA kotak kecil di dalam blok prefab ini
+        TileVFX[] allVFX = rootBlock.GetComponentsInChildren<TileVFX>();
+        
+        foreach (TileVFX vfx in allVFX)
         {
-            r.material.color = new Color(0.3f, 0.3f, 0.3f, 1f); 
+            // Cocokkan posisinya
+            int vfxGridX = Mathf.RoundToInt(vfx.transform.position.x);
+            int vfxGridY = Mathf.RoundToInt(vfx.transform.position.z);
             
-            // Matikan efek menyala (emission) kalau material virusmu pakai glow
-            r.material.DisableKeyword("_EMISSION"); 
+            // HANYA MATIKAN kotak yang posisinya SAMA PERSIS dengan Malware
+            if (vfxGridX == malwarePos.x && vfxGridY == malwarePos.y)
+            {
+                MeshRenderer[] renderers = vfx.GetComponentsInChildren<MeshRenderer>();
+                foreach (MeshRenderer r in renderers)
+                {
+                    r.material.color = new Color(0.3f, 0.3f, 0.3f, 1f); // Ubah jadi abu-abu
+                    r.material.DisableKeyword("_EMISSION"); 
+                }
+            }
         }
     }
 
@@ -62,42 +70,54 @@ public class VirusManager : MonoBehaviour
     {
         if (gridManager == null) return;
 
-        // 1. Reset: Matikan semua ikon peringatan di lantai
+        // 1. Sapu bersih: Matikan semua ikon peringatan di lantai
         foreach (var kvp in gridManager.gridMap)
         {
             if (kvp.Value.tileObject != null)
             {
-                TileVFX vfx = kvp.Value.tileObject.GetComponentInChildren<TileVFX>();
-                if (vfx != null) vfx.SetInfectedVisual(false);
+                // Gunakan GetComponentsInChildren agar semua kotak dalam 1 blok ikut mati ikonnya
+                TileVFX[] allVFX = kvp.Value.tileObject.GetComponentsInChildren<TileVFX>();
+                foreach (TileVFX vfx in allVFX)
+                {
+                    vfx.SetInfectedVisual(false);
+                }
             }
         }
 
-        // 2. Cari semua Malware yang MASIH AKTIF
         Vector2Int[] dirs8 = { 
             Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right,
             new Vector2Int(1, 1), new Vector2Int(1, -1), new Vector2Int(-1, 1), new Vector2Int(-1, -1)
         };
 
+        // 2. Cari Malware aktif dan nyalakan ikon HANYA di kotak sebelahnya
         foreach (var kvp in gridManager.gridMap)
         {
             if (kvp.Value.type == GridTileType.Malware && !kvp.Value.isNeutralized)
             {
-                // 3. Nyalakan ikon di 8 blok sekitarnya!
                 foreach (Vector2Int dir in dirs8)
                 {
                     Vector2Int neighborPos = kvp.Key + dir;
                     
                     if (gridManager.gridMap.TryGetValue(neighborPos, out TileData neighborTile))
                     {
-                        // Jangan kasih ikon warning ke Malware itu sendiri atau ke Firewall
                         if (neighborTile.type != GridTileType.Malware && neighborTile.type != GridTileType.Firewall)
                         {
                             if (neighborTile.tileObject != null)
                             {
-                                TileVFX neighborVFX = neighborTile.tileObject.GetComponentInChildren<TileVFX>();
-                                if (neighborVFX != null)
+                                // Ambil semua kotak di dalam blok tetangga tersebut
+                                TileVFX[] allNeighborVFX = neighborTile.tileObject.GetComponentsInChildren<TileVFX>();
+                                
+                                foreach (TileVFX nVfx in allNeighborVFX)
                                 {
-                                    neighborVFX.SetInfectedVisual(true); // Pop-up ikonnya!
+                                    // Cocokkan posisinya
+                                    int vfxGridX = Mathf.RoundToInt(nVfx.transform.position.x);
+                                    int vfxGridY = Mathf.RoundToInt(nVfx.transform.position.z);
+                                    
+                                    // HANYA NYALAKAN ikon di kotak (Tile 1x1) yang posisinya akurat!
+                                    if (vfxGridX == neighborPos.x && vfxGridY == neighborPos.y)
+                                    {
+                                        nVfx.SetInfectedVisual(true);
+                                    }
                                 }
                             }
                         }
