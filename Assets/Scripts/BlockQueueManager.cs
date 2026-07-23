@@ -49,6 +49,12 @@ public class BlockQueueManager : MonoBehaviour
     private int displayedStockCount = 0; 
     private Coroutine stockCountCoroutine;
 
+    [Header("Shortcut Visuals")]
+    public Image[] shortcutImages = new Image[3]; 
+    public Sprite shortcutDefault;  
+    public Sprite shortcutSelected; 
+    public Sprite shortcutEmpty;    
+
     [Header("References")]
     public PlacementSystem placementSystem;
 
@@ -288,19 +294,24 @@ public class BlockQueueManager : MonoBehaviour
     {
         for (int i = 0; i < 3; i++)
         {
-            if (frameImages[i] == null) continue;
+            if (frameImages[i] != null)
+            {
+                if (activeHand[i] == null)
+                    frameImages[i].sprite = frameEmpty;
+                else if (currentSelectedSlot == i)
+                    frameImages[i].sprite = frameSelected;
+                else
+                    frameImages[i].sprite = frameDefault;
+            }
 
-            if (activeHand[i] == null)
+            if (shortcutImages.Length > i && shortcutImages[i] != null)
             {
-                frameImages[i].sprite = frameEmpty;
-            }
-            else if (currentSelectedSlot == i)
-            {
-                frameImages[i].sprite = frameSelected;
-            }
-            else
-            {
-                frameImages[i].sprite = frameDefault;
+                if (activeHand[i] == null)
+                    shortcutImages[i].sprite = shortcutEmpty;
+                else if (currentSelectedSlot == i)
+                    shortcutImages[i].sprite = shortcutSelected;
+                else
+                    shortcutImages[i].sprite = shortcutDefault;
             }
         }
     }

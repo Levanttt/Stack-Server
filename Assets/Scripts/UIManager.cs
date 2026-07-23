@@ -71,6 +71,7 @@ public class UIManager : MonoBehaviour
     private Color originalFillColor;
     private Color originalTextColor;
     private Coroutine celebrationCoroutine;
+    private Coroutine wrapCoroutine;
 
     private void Awake()
     {
@@ -100,46 +101,31 @@ public class UIManager : MonoBehaviour
 
     private void Update()
     {
-        if (isWrappingAround)
+        if (isWrappingAround) return; 
+
+        if (radialScoreFill != null)
+            radialScoreFill.fillAmount = Mathf.SmoothDamp(radialScoreFill.fillAmount, mainTargetFill, ref radialVelocity, barSmoothTime);
+
+        if (scoreFill != null)
+            scoreFill.fillAmount = Mathf.SmoothDamp(scoreFill.fillAmount, mainTargetFill, ref linearVelocity, barSmoothTime);
+
+        if (scorePreviewFill != null && scorePreviewFill.gameObject.activeSelf)
         {
-            float step = Time.deltaTime * fillAnimationSpeed * 2f;
-            bool radialDone = false;
-            bool linearDone = false;
-
-            if (radialScoreFill != null)
-            {
-                radialScoreFill.fillAmount = Mathf.MoveTowards(radialScoreFill.fillAmount, 1f, step);
-                if (radialScoreFill.fillAmount >= 1f) radialDone = true;
-            }
-            else radialDone = true;
-
-            if (scoreFill != null)
-            {
-                scoreFill.fillAmount = Mathf.MoveTowards(scoreFill.fillAmount, 1f, step);
-                if (scoreFill.fillAmount >= 1f) linearDone = true;
-            }
-            else linearDone = true;
-
-            if (radialDone && linearDone)
-            {
-                isWrappingAround = false;
-                if (scoreFill != null) scoreFill.fillAmount = 0f;
-                if (radialScoreFill != null) radialScoreFill.fillAmount = 0f;
-                linearVelocity = 0f;
-                radialVelocity = 0f;
-            }
-        }
-        else
-        {
-            if (radialScoreFill != null)
-                radialScoreFill.fillAmount = Mathf.SmoothDamp(radialScoreFill.fillAmount, mainTargetFill, ref radialVelocity, barSmoothTime);
-
-            if (scoreFill != null)
-                scoreFill.fillAmount = Mathf.SmoothDamp(scoreFill.fillAmount, mainTargetFill, ref linearVelocity, barSmoothTime);
-
-            if (isPreviewing && scorePreviewFill != null && scorePreviewFill.gameObject.activeSelf)
+            if (isPreviewing)
             {
                 scorePreviewFill.fillAmount = Mathf.SmoothDamp(scorePreviewFill.fillAmount, ghostTargetFill, ref ghostVelocity, barSmoothTime * 0.8f);
+            }
+            else
+            {
+                scorePreviewFill.fillAmount = Mathf.SmoothDamp(scorePreviewFill.fillAmount, actualTargetFill, ref ghostVelocity, barSmoothTime);
+
+                bool isGhostDone = Mathf.Abs(scorePreviewFill.fillAmount - actualTargetFill) < 0.005f;
+                bool isMainDone = scoreFill == null || Mathf.Abs(scoreFill.fillAmount - actualTargetFill) < 0.005f;
+                
+                if (isGhostDone && isMainDone)
+                {
+                    scorePreviewFill.gameObject.SetActive(false);
+                }
             }
         }
     }
@@ -169,21 +155,54 @@ public class UIManager : MonoBehaviour
 
         if (targetMilestoneScore > 0)
         {
-            if (lastMilestoneScore != 0 && targetMilestoneScore > lastMilestoneScore)
-            {
-                isWrappingAround = true;
-                if (celebrationCoroutine != null) StopCoroutine(celebrationCoroutine);
-                celebrationCoroutine = StartCoroutine(CelebrateMilestoneRoutine());
-            }
-
-            lastMilestoneScore = targetMilestoneScore;
             actualTargetFill = Mathf.Clamp01((float)Mathf.Max(0, currentScore) / targetMilestoneScore);
 
             if (!isPreviewing)
             {
                 mainTargetFill = actualTargetFill;
             }
+
+            if (lastMilestoneScore != 0 && targetMilestoneScore > lastMilestoneScore)
+            {
+                if (wrapCoroutine != null) StopCoroutine(wrapCoroutine);
+                wrapCoroutine = StartCoroutine(WrapBarRoutine());
+
+                if (celebrationCoroutine != null) StopCoroutine(celebrationCoroutine);
+                celebrationCoroutine = StartCoroutine(CelebrateMilestoneRoutine());
+            }
+
+            lastMilestoneScore = targetMilestoneScore;
         }
+    }
+
+    private IEnumerator WrapBarRoutine()
+    {
+        isWrappingAround = true;
+    
+        float speed = 2.5f; 
+        float currentFill = radialScoreFill != null ? radialScoreFill.fillAmount : 0f;
+        
+        while (currentFill < 1f)
+        {
+            currentFill = Mathf.MoveTowards(currentFill, 1f, Time.deltaTime * speed);
+            
+            if (radialScoreFill != null) radialScoreFill.fillAmount = currentFill;
+            if (scoreFill != null) scoreFill.fillAmount = currentFill;
+            if (scorePreviewFill != null && scorePreviewFill.gameObject.activeSelf) scorePreviewFill.fillAmount = currentFill;
+            
+            yield return null;
+        }
+        
+        if (radialScoreFill != null) radialScoreFill.fillAmount = 0f;
+        if (scoreFill != null) scoreFill.fillAmount = 0f;
+        
+        if (scorePreviewFill != null && scorePreviewFill.gameObject.activeSelf) scorePreviewFill.fillAmount = 0f;
+        
+        radialVelocity = 0f;
+        linearVelocity = 0f;
+        ghostVelocity = 0f;
+        
+        isWrappingAround = false;
     }
 
     private IEnumerator LerpScoreText(int endScore, int targetMilestoneScore)
@@ -292,7 +311,6 @@ public class UIManager : MonoBehaviour
     public void HideScorePreview()
     {
         isPreviewing = false;
-        if (scorePreviewFill != null) scorePreviewFill.gameObject.SetActive(false);
         mainTargetFill = actualTargetFill;
     }
 
@@ -448,10 +466,11 @@ public class UIManager : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
             int currentVal = Mathf.RoundToInt(Mathf.Lerp(0, targetNumber, t));
-            textElement.text = currentVal.ToString();
+            
+            textElement.text = currentVal.ToString("N0"); 
             yield return null;
         }
-        textElement.text = targetNumber.ToString();
+        textElement.text = targetNumber.ToString("N0");
     }
 
     private IEnumerator PulseNewRecord()
