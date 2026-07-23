@@ -485,7 +485,7 @@ public class BlockQueueManager : MonoBehaviour
 
         if (currentDeck.Count == 0 && availableBlocks.Count == 0)
         {
-            TriggerGameOver("OUT OF STOCK");
+            TriggerGameOver("OUT OF BLOCKS");
             return;
         }
 
@@ -494,7 +494,7 @@ public class BlockQueueManager : MonoBehaviour
             bool cannotPlaceAny = placementSystem.CheckForGameOver(availableBlocks);
             if (cannotPlaceAny)
             {
-                TriggerGameOver("NO VALID MOVES");
+                TriggerGameOver("SYSTEM OVERLOADED");
             }
         }
     }
@@ -509,7 +509,7 @@ public class BlockQueueManager : MonoBehaviour
         if (UIManager.Instance != null)
         {
             int finalScore = ScoreManager.Instance != null ? ScoreManager.Instance.totalScore : 0;
-            UIManager.Instance.ShowGameOverPanel(finalScore);
+            UIManager.Instance.ShowGameOverPanel(finalScore, reason);
         }
 
         if (GameStateManager.Instance != null)
