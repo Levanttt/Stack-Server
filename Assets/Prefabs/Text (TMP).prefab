@@ -58,7 +58,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  - {fileID: 6387360468017831298, guid: ad713314c0a8d724ead273e335970f99, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -185,5 +185,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   textMesh: {fileID: 3206501626933603765}
-  floatSpeed: 1.5
-  lifetime: 1
+  popUpSpeed: 1.5
+  popUpDuration: 0.4
+  hoverDuration: 0.15
+  flyDuration: 0.3
+  positiveColor: {r: 0.02745098, g: 0.6, b: 1, a: 1}
+  negativeColor: {r: 1, g: 0, b: 0, a: 1}
+  neutralColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}

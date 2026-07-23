@@ -352,8 +352,17 @@ public class BlockQueueManager : MonoBehaviour
 
         if (activeHand[slotIndex] != null)
         {
-            currentSelectedSlot = slotIndex;
-            if (placementSystem != null) placementSystem.blockPrefab = activeHand[slotIndex];
+            if (currentSelectedSlot == slotIndex)
+            {
+                currentSelectedSlot = -1;
+                if (placementSystem != null) placementSystem.blockPrefab = null;
+            }
+            else
+            {
+                currentSelectedSlot = slotIndex;
+                if (placementSystem != null) placementSystem.blockPrefab = activeHand[slotIndex];
+            }
+
             UpdateFrameVisuals();
         }
         else

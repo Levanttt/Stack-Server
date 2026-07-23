@@ -29,7 +29,6 @@ public class ScoreManager : MonoBehaviour
     
     [HideInInspector] public int totalScore = 0;
     
-    // --- TAMBAHAN HIGHSCORE ---
     public int highScore = 0; 
     
     private int permanentBonusScore = 0; 
@@ -41,10 +40,8 @@ public class ScoreManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    // --- TAMBAHAN HIGHSCORE ---
     private void Start()
     {
-        // Tarik data highscore dari memori perangkat. Jika kosong (pemain baru), kembalikan nilai 0.
         highScore = PlayerPrefs.GetInt("HighScoreData", 0);
     }
 
@@ -178,8 +175,6 @@ public class ScoreManager : MonoBehaviour
         totalScore = localPlacementScore + permanentBonusScore;
 
         if (MilestoneManager.Instance != null) MilestoneManager.Instance.CheckMilestone(totalScore);
-        if (UIManager.Instance != null && MilestoneManager.Instance != null)
-            UIManager.Instance.UpdateHUDScore(totalScore, MilestoneManager.Instance.CurrentTargetMilestone);
 
         Debug.Log($"[SCORE] Dasar & Kabel Lokal: {localPlacementScore} | Tetris Bonus: {permanentBonusScore} | TOTAL: {totalScore}");
     }
@@ -540,8 +535,6 @@ public class ScoreManager : MonoBehaviour
         return tempScore;
     }
 
-    // --- TAMBAHAN HIGHSCORE ---
-    // Panggil fungsi ini saat Game Over
     public void CheckAndSaveHighScore()
     {
         if (totalScore > highScore)
@@ -554,7 +547,6 @@ public class ScoreManager : MonoBehaviour
         }
     }
 
-    // Gunakan fungsi ini untuk mengambil data skor tertinggi dan menampilkannya di UI Menu/Game Over
     public int GetHighScore()
     {
         return PlayerPrefs.GetInt("HighScoreData", 0);
