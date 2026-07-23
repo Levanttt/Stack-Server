@@ -21,11 +21,13 @@ public class PlacementSystem : MonoBehaviour
     public Material invalidMaterial;
     public TextMeshPro staticPreviewText; 
     
-    [Header("Dynamic Offset Settings")]
-    [Tooltip("Offset standar untuk ukuran ganjil (1, 3, dst) atau default")]
-    public Vector3 defaultTextOffset = new Vector3(0f, 2f, 0f); 
+    [Header("Preview Text Colors")]
+    public Color textPositiveColor = Color.green;
+    public Color textNegativeColor = Color.red;
+    public Color textNeutralColor = Color.gray;
     
-    [Tooltip("Offset khusus untuk blok ukuran 2 (Double Block)")]
+    [Header("Dynamic Offset Settings")]
+    public Vector3 defaultTextOffset = new Vector3(0f, 2f, 0f); 
     public Vector3 doubleBlockTextOffset = new Vector3(-0.5f, 2f, 0f);
 
     private Vector3 currentDynamicTextOffset; 
@@ -39,8 +41,12 @@ public class PlacementSystem : MonoBehaviour
     private Vector2Int lastHoveredPos = new Vector2Int(-999, -999);
     private float lastRotation = -1f;
 
+    private bool isWaitingForScore = false;
+
     private void Update()
     {
+        if (isWaitingForScore) return;
+
         HandleBlockSelection();
         HandleRotation();
         DetectAndPlace();
@@ -146,9 +152,9 @@ public class PlacementSystem : MonoBehaviour
                         
                         if (Camera.main != null) staticPreviewText.transform.rotation = Camera.main.transform.rotation;
                         
-                        if (estimatedScore > 0) { staticPreviewText.text = $"+{estimatedScore}"; staticPreviewText.color = Color.green; }
-                        else if (estimatedScore < 0) { staticPreviewText.text = $"{estimatedScore}"; staticPreviewText.color = Color.red; }
-                        else { staticPreviewText.text = "0"; staticPreviewText.color = Color.gray; }
+                        if (estimatedScore > 0) { staticPreviewText.text = $"+{estimatedScore}"; staticPreviewText.color = textPositiveColor; }
+                        else if (estimatedScore < 0) { staticPreviewText.text = $"{estimatedScore}"; staticPreviewText.color = textNegativeColor; }
+                        else { staticPreviewText.text = "0"; staticPreviewText.color = textNeutralColor; }
                     }
 
                     if (UIManager.Instance != null && MilestoneManager.Instance != null)
@@ -171,15 +177,37 @@ public class PlacementSystem : MonoBehaviour
 
             if (canPlace && Input.GetMouseButtonDown(0))
             {
-                int finalScoreGained = scoreManager.GetEstimatedPlacementScore(baseGridPos, rotatedTiles);
+                isWaitingForScore = true; 
                 
+                int finalScoreGained = scoreManager.GetEstimatedPlacementScore(baseGridPos, rotatedTiles);
                 Vector3 popUpPos = previewObject.transform.position + currentDynamicTextOffset;
                 
-                if (FloatingTextManager.Instance != null) 
-                    FloatingTextManager.Instance.SpawnPreviewScore(popUpPos, finalScoreGained);
+                if (previewObject != null) previewObject.SetActive(false);
+                if (staticPreviewText != null) staticPreviewText.gameObject.SetActive(false);
 
                 PlaceBlock(baseGridPos, rotatedTiles);
-                HidePreview();
+
+                if (FloatingTextManager.Instance != null && UIManager.Instance != null && UIManager.Instance.scoreValueText != null) 
+                {
+                    FloatingTextManager.Instance.SpawnFinalScore(
+                        popUpPos, 
+                        finalScoreGained, 
+                        UIManager.Instance.scoreValueText.rectTransform,
+                        () => 
+                        {
+                            UIManager.Instance.HideScorePreview(); 
+                            UIManager.Instance.UpdateHUDScore(scoreManager.totalScore, MilestoneManager.Instance.CurrentTargetMilestone);
+                            
+                            isWaitingForScore = false; 
+                        }
+                    );
+                }
+                else
+                {
+                    UIManager.Instance.HideScorePreview();
+                    isWaitingForScore = false;
+                }
+
                 lastHoveredPos = new Vector2Int(-999, -999); 
             }
         }
@@ -310,7 +338,6 @@ public class PlacementSystem : MonoBehaviour
         }
     }
 
-    // 1. UBAH DARI PRIVATE MENJADI PUBLIC
     public bool CheckForGameOver(List<GameObject> availableBlockPrefabs)
     {
         if (gridManager == null || availableBlockPrefabs.Count == 0) return true;
@@ -318,7 +345,6 @@ public class PlacementSystem : MonoBehaviour
         List<Vector2Int> emptyTiles = new List<Vector2Int>();
         foreach (Vector2Int floorPos in gridManager.floorGrid.Keys)
         {
-            // Tambahkan pengecekan gridMap juga, berjaga-jaga jika Virus di-spawn oleh sistem, bukan player
             if (!gridData.ContainsKey(floorPos) && !gridManager.gridMap.ContainsKey(floorPos)) 
                 emptyTiles.Add(floorPos);
         }
@@ -328,7 +354,6 @@ public class PlacementSystem : MonoBehaviour
             if (prefab == null) continue;
             BlockData blockData = prefab.GetComponent<BlockData>();
             
-            // JIKA VIRUS/FIREWALL TIDAK PUNYA BLOCKDATA, JANGAN DI-SKIP, TAPI ANGGAP SEBAGAI TILE 1x1
             if (blockData == null) 
             {
                 if (emptyTiles.Count > 0) return false; 
@@ -345,17 +370,16 @@ public class PlacementSystem : MonoBehaviour
                     foreach (TileOccupancy tile in rotatedTiles)
                     {
                         Vector2Int checkPos = basePos + tile.position;
-                        // Tambahkan gridManager.gridMap.ContainsKey agar tabrakan dengan Virus terbaca
                         if (gridData.ContainsKey(checkPos) || (gridManager != null && gridManager.gridMap.ContainsKey(checkPos)) || !gridManager.floorGrid.ContainsKey(checkPos))
                         {
                             canPlaceThis = false;
                             break;
                         }
                     }
-                    if (canPlaceThis) return false; // Masih ada tempat! Permainan jalan terus.
+                    if (canPlaceThis) return false;
                 }
             }
         }
-        return true; // Mentok! Panggil Game Over.
+        return true;
     }
 }

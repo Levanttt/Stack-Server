@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,7 +7,7 @@ public class FloatingTextManager : MonoBehaviour
     public static FloatingTextManager Instance { get; private set; }
 
     [Header("Settings")]
-    public GameObject floatingTextPrefab; // Masukkan Prefab Teks 3D-mu ke sini
+    public GameObject floatingTextPrefab;
     public int poolSize = 10;
 
     private Queue<GameObject> textPool = new Queue<GameObject>();
@@ -16,7 +17,6 @@ public class FloatingTextManager : MonoBehaviour
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
 
-        // Pre-warm: Buat stok teks di awal game
         for (int i = 0; i < poolSize; i++)
         {
             GameObject textObj = Instantiate(floatingTextPrefab, transform);
@@ -35,7 +35,6 @@ public class FloatingTextManager : MonoBehaviour
         }
         else
         {
-            // Kalau stok habis karena pemain geser mouse terlalu cepat, buat baru
             textObj = Instantiate(floatingTextPrefab, transform);
         }
 
@@ -46,6 +45,29 @@ public class FloatingTextManager : MonoBehaviour
         if (ft != null)
         {
             ft.Setup(estimatedScore);
+        }
+    }
+
+    public void SpawnFinalScore(Vector3 position, int score, RectTransform targetUI, Action onArrive = null)
+    {
+        GameObject textObj = null;
+
+        if (textPool.Count > 0)
+        {
+            textObj = textPool.Dequeue();
+        }
+        else
+        {
+            textObj = Instantiate(floatingTextPrefab, transform);
+        }
+
+        textObj.transform.position = position;
+        textObj.SetActive(true);
+
+        FloatingText ft = textObj.GetComponent<FloatingText>();
+        if (ft != null)
+        {
+            ft.Setup(score, targetUI, onArrive);
         }
     }
 
