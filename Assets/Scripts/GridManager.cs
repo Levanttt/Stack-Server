@@ -73,17 +73,11 @@ public class GridManager : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.E)) 
-        {
-            currentMilestone++; 
-            ExpandGridBasedOnProgression();
-        }
+        
     }
 
     public void ExpandGridBasedOnProgression()
     {
-        // 1. Tentukan jumlah arah ekspansi berdasarkan Milestone
-        // Milestone 1-2 = 1 arah. Milestone 3-4 = bisa 2 arah, dst.
         int maxDirections = Mathf.Clamp(2 + (currentMilestone / 2), 2, 4);
         int directionsCount = Random.Range(2, maxDirections + 1);
 
@@ -92,7 +86,6 @@ public class GridManager : MonoBehaviour
             ExpansionDirection.East, ExpansionDirection.West
         };
 
-        // Acak arah sisi mana yang akan ditarik
         for (int i = 0; i < allDirs.Count; i++)
         {
             int rnd = Random.Range(i, allDirs.Count);
@@ -101,13 +94,11 @@ public class GridManager : MonoBehaviour
             allDirs[i] = temp;
         }
 
-        // 2. Patokan batas baru
         int targetMinX = minX;
         int targetMaxX = maxX;
         int targetMinY = minY;
         int targetMaxY = maxY;
 
-        // 3. Selalu tambahkan GARIS PENUH (Full Line) dengan rapi
         for (int i = 0; i < directionsCount; i++)
         {
             switch (allDirs[i])
@@ -133,7 +124,6 @@ public class GridManager : MonoBehaviour
             }
         }
 
-        // 4. Terapkan batas area murni yang baru
         minX = targetMinX;
         maxX = targetMaxX;
         minY = targetMinY;
@@ -286,16 +276,20 @@ public class GridManager : MonoBehaviour
     {
         foreach (Vector2Int pos in group)
         {
-            Vector3 finalPos = new Vector3(pos.x * cellSize, 0, pos.y * cellSize);
-            Vector3 startPos = new Vector3(finalPos.x, startOffsetY, finalPos.z);
+            if (!floorGrid.ContainsKey(pos))
+            {
+                Vector3 finalPos = new Vector3(pos.x * cellSize, 0, pos.y * cellSize);
+                Vector3 startPos = new Vector3(finalPos.x, startOffsetY, finalPos.z);
 
-            GameObject spawnedTile = Instantiate(floorTilePrefab, startPos, Quaternion.identity, floorContainer);
-            spawnedTile.name = $"FloorTile ({pos.x}, {pos.y})";
-            floorGrid.Add(pos, spawnedTile);
+                GameObject spawnedTile = Instantiate(floorTilePrefab, startPos, Quaternion.identity, floorContainer);
+                spawnedTile.name = $"FloorTile ({pos.x}, {pos.y})";
+                
+                floorGrid.Add(pos, spawnedTile);
 
-            StartCoroutine(AnimateTile(spawnedTile.transform, startPos, finalPos));
+                StartCoroutine(AnimateTile(spawnedTile.transform, startPos, finalPos));
 
-            yield return new WaitForSeconds(spawnInterval);
+                yield return new WaitForSeconds(spawnInterval);
+            }
         }
     }
 

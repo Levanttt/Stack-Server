@@ -296,8 +296,15 @@ public class PlacementSystem : MonoBehaviour
             if (isGameOver)
             {
                 ScoreManager.Instance.CheckAndSaveHighScore();
-                
-                if (UIManager.Instance != null) UIManager.Instance.ShowGameOverPanel(scoreManager.totalScore);
+                if (currentCards.Count == 0)
+                {
+                    if (UIManager.Instance != null) UIManager.Instance.ShowGameOverPanel(scoreManager.totalScore, "OUT OF BLOCKS");
+                }
+                else
+                {
+                    if (UIManager.Instance != null) UIManager.Instance.ShowGameOverPanel(scoreManager.totalScore, "SYSTEM OVERLOADED");
+                }
+
                 if (GameStateManager.Instance != null) GameStateManager.Instance.ChangeState(GameState.GameOver);
             }
         }

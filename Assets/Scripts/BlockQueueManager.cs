@@ -2,12 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro; 
+using TMPro;
 
 [System.Serializable]
 public class BlockUnlockTier
 {
-    public int unlockAtMilestoneLevel; 
+    public int unlockAtMilestoneLevel;
     public List<GameObject> blockPrefabs;
 }
 
@@ -15,35 +15,45 @@ public class BlockQueueManager : MonoBehaviour
 {
     public static BlockQueueManager Instance { get; private set; }
 
-    [Header("Progression Tiers (Katalog)")]
+    [Header("Progression Tiers")]
     public List<BlockUnlockTier> unlockTiers = new List<BlockUnlockTier>();
     private List<GameObject> currentlyUnlockedBlocks = new List<GameObject>();
 
     [Header("Deck Settings")]
-    public int initialDeckCapacity = 6; 
+    public int initialDeckCapacity = 6;
     private Queue<GameObject> currentDeck = new Queue<GameObject>();
     private List<GameObject> currentBag = new List<GameObject>();
 
     [Header("Dynamic Scaling Stock")]
-    public int baseRewardStock = 4; 
-    public int rewardIncrementPerLevel = 1; 
+    public int baseRewardStock = 4;
+    public int rewardIncrementPerLevel = 1;
 
-    [Header("Hand Settings (3 Slot)")]
+    [Header("Hand Settings")]
     public GameObject[] activeHand = new GameObject[3];
     public int currentSelectedSlot = -1;
 
-    [Header("UI References - JANGAN SAMPAI TERTUKAR!")]
-    public Image[] slotImages = new Image[3]; 
-    public RectTransform[] cardFrames = new RectTransform[3]; 
-    public TextMeshProUGUI totalStockText; 
+    [Header("UI References")]
+    public Image[] slotImages = new Image[3];
+    public RectTransform[] cardFrames = new RectTransform[3];
+    
+    public Image[] frameImages = new Image[3];
+    public Sprite frameDefault;
+    public Sprite frameSelected;
+    public Sprite frameEmpty;
+
+    [Header("Stock UI Visuals")]
+    public Image stockImage;       
+    public Sprite stockDefaultSprite; 
+    public Sprite stockEmptySprite;
+    public TextMeshProUGUI totalStockText;
+    private int displayedStockCount = 0; 
+    private Coroutine stockCountCoroutine;
 
     [Header("References")]
     public PlacementSystem placementSystem;
 
-    [Header("Fly-In Animation (Sistem Animasi Baru)")]
-    [Tooltip("Titik awal munculnya kartu baru. Letakkan Empty UI Object di dekat Stock Counter Panel.")]
-    public RectTransform deckSpawnPoint; 
-    
+    [Header("Fly-In Animation")]
+    public RectTransform deckSpawnPoint;
     public Image flyingIconPrefab;
     public RectTransform animationLayer;
     public float cardAppearDuration = 0.3f;
@@ -51,7 +61,7 @@ public class BlockQueueManager : MonoBehaviour
     public float cardPopStartScale = 0.3f;
 
     private bool isAnimating = false;
-    private Vector2[] defaultSlotPositions = new Vector2[3]; 
+    private Vector2[] defaultSlotPositions = new Vector2[3];
 
     private struct CardMove
     {
@@ -77,7 +87,7 @@ public class BlockQueueManager : MonoBehaviour
 
     private void Update()
     {
-        if (isAnimating) return; 
+        if (isAnimating) return;
 
         bool needsEmergencyRefill = false;
         for (int i = 0; i < activeHand.Length; i++)
@@ -201,7 +211,7 @@ public class BlockQueueManager : MonoBehaviour
         while (currentBag.Count > 0)
         {
             GameObject drawnBlock = currentBag[0];
-            currentBag.RemoveAt(0); 
+            currentBag.RemoveAt(0);
             if (drawnBlock != null)
             {
                 currentDeck.Enqueue(drawnBlock);
@@ -216,7 +226,7 @@ public class BlockQueueManager : MonoBehaviour
 
         for (int i = 0; i < activeHand.Length; i++)
         {
-            if (activeHand[i] == null && currentDeck.Count > 0) activeHand[i] = currentDeck.Dequeue(); 
+            if (activeHand[i] == null && currentDeck.Count > 0) activeHand[i] = currentDeck.Dequeue();
             UpdateSlotUI(i);
         }
         UpdateStockUI();
@@ -235,7 +245,7 @@ public class BlockQueueManager : MonoBehaviour
         for (int i = 0; i < activeHand.Length; i++)
         {
             if (i >= startIndex) activeHand[i] = tempList[i - startIndex];
-            else activeHand[i] = null; 
+            else activeHand[i] = null;
         }
     }
 
@@ -243,33 +253,54 @@ public class BlockQueueManager : MonoBehaviour
     {
         if (cardFrames[slotIndex] != null)
         {
+            cardFrames[slotIndex].gameObject.SetActive(true);
+
             if (activeHand[slotIndex] != null)
             {
-                cardFrames[slotIndex].gameObject.SetActive(true); 
-
                 if (slotImages[slotIndex] != null)
                 {
                     BlockData data = activeHand[slotIndex].GetComponent<BlockData>();
                     if (data != null && data.blockIcon != null)
                     {
                         slotImages[slotIndex].sprite = data.blockIcon;
-                        slotImages[slotIndex].color = Color.white; 
+                        slotImages[slotIndex].color = Color.white;
                     }
                     else
                     {
-                        slotImages[slotIndex].sprite = null;
-                        slotImages[slotIndex].color = new Color(1f, 1f, 1f, 0f); 
+                        // slotImages[slotIndex].sprite = null;
+                        slotImages[slotIndex].color = new Color(1f, 1f, 1f, 0f);
                     }
                 }
             }
             else
             {
-                cardFrames[slotIndex].gameObject.SetActive(false); 
                 if (slotImages[slotIndex] != null)
                 {
-                    slotImages[slotIndex].sprite = null;
-                    slotImages[slotIndex].color = new Color(1f, 1f, 1f, 0f); 
+                    // slotImages[slotIndex].sprite = null;
+                    slotImages[slotIndex].color = new Color(1f, 1f, 1f, 0f);
                 }
+            }
+        }
+        UpdateFrameVisuals();
+    }
+
+    private void UpdateFrameVisuals()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            if (frameImages[i] == null) continue;
+
+            if (activeHand[i] == null)
+            {
+                frameImages[i].sprite = frameEmpty;
+            }
+            else if (currentSelectedSlot == i)
+            {
+                frameImages[i].sprite = frameSelected;
+            }
+            else
+            {
+                frameImages[i].sprite = frameDefault;
             }
         }
     }
@@ -282,21 +313,44 @@ public class BlockQueueManager : MonoBehaviour
 
     private void UpdateStockUI()
     {
+        int targetStock = currentDeck.Count;
+
         if (totalStockText != null)
         {
-            totalStockText.text = currentDeck.Count.ToString();
-            totalStockText.color = currentDeck.Count == 0 ? Color.red : Color.white;
+            if (stockCountCoroutine != null) StopCoroutine(stockCountCoroutine);
+            
+            stockCountCoroutine = StartCoroutine(AnimateStockText(targetStock));
+        }
+
+        if (stockImage != null)
+        {
+            if (targetStock == 0)
+            {
+                if (stockEmptySprite != null) stockImage.sprite = stockEmptySprite;
+            }
+            else
+            {
+                if (stockDefaultSprite != null) stockImage.sprite = stockDefaultSprite;
+            }
         }
     }
 
     public void SelectBlock(int slotIndex)
     {
-        if (isAnimating) return; 
+        if (isAnimating) return;
 
         if (activeHand[slotIndex] != null)
         {
             currentSelectedSlot = slotIndex;
-            placementSystem.blockPrefab = activeHand[slotIndex];
+            if (placementSystem != null) placementSystem.blockPrefab = activeHand[slotIndex];
+            UpdateFrameVisuals();
+        }
+        else
+        {
+            if (cardFrames[slotIndex] != null)
+            {
+                StartCoroutine(ShakeErrorUI(cardFrames[slotIndex], defaultSlotPositions[slotIndex]));
+            }
         }
     }
 
@@ -308,6 +362,7 @@ public class BlockQueueManager : MonoBehaviour
             currentSelectedSlot = -1;
             if (placementSystem != null) placementSystem.blockPrefab = null;
 
+            UpdateFrameVisuals();
             StartCoroutine(AnimateCardUsage(slotToEmpty));
         }
     }
@@ -325,22 +380,19 @@ public class BlockQueueManager : MonoBehaviour
             }
         }
 
-        if (cardFrames[usedSlotIndex] != null)
+        if (slotImages[usedSlotIndex] != null)
         {
-            cardFrames[usedSlotIndex].gameObject.SetActive(false);
-            if (slotImages[usedSlotIndex] != null)
-            {
-                slotImages[usedSlotIndex].sprite = null;
-                slotImages[usedSlotIndex].color = new Color(1f, 1f, 1f, 0f);
-            }
+            // slotImages[usedSlotIndex].sprite = null;
+            slotImages[usedSlotIndex].color = new Color(1f, 1f, 1f, 0f);
         }
 
-        yield return new WaitForSeconds(0.2f); 
+        yield return new WaitForSeconds(0.2f);
 
         activeHand[usedSlotIndex] = null;
         GameObject incomingBlock = currentDeck.Count > 0 ? currentDeck.Peek() : null;
 
         RefillHand();
+        Canvas.ForceUpdateCanvases();
 
         foreach (CardMove move in movers)
         {
@@ -375,9 +427,10 @@ public class BlockQueueManager : MonoBehaviour
 
     private Image SpawnGhost(Sprite sprite, Vector3 worldStartPos)
     {
-        RectTransform parent = animationLayer != null ? animationLayer : (RectTransform)cardFrames[0].parent;
+        RectTransform parent = animationLayer != null ? animationLayer : (RectTransform)flyingIconPrefab.transform.parent;
 
         Image ghost = Instantiate(flyingIconPrefab, parent);
+        
         ghost.gameObject.SetActive(true);
         ghost.sprite = sprite;
         ghost.color = Color.white;
@@ -407,9 +460,11 @@ public class BlockQueueManager : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / cardAppearDuration);
-            float smoothT = 1f - Mathf.Pow(1f - t, 3f); 
+            float smoothT = 1f - (1f - t) * (1f - t) * (1f - t);
 
-            ghost.rectTransform.position = Vector3.Lerp(fromWorldPos, toWorldPos, smoothT);
+            Vector3 currentTargetPos = cardFrames[targetSlot].position;
+
+            ghost.rectTransform.position = Vector3.Lerp(fromWorldPos, currentTargetPos, smoothT);
             
             float currentScale = Mathf.Lerp(initialScale, 1f, smoothT);
             ghost.rectTransform.localScale = Vector3.one * currentScale;
@@ -417,9 +472,10 @@ public class BlockQueueManager : MonoBehaviour
             yield return null;
         }
 
-        ghost.rectTransform.position = toWorldPos;
+        ghost.rectTransform.position = cardFrames[targetSlot].position;
         ghost.rectTransform.localScale = Vector3.one;
         if (slotImages[targetSlot] != null) slotImages[targetSlot].color = Color.white;
+        
         Destroy(ghost.gameObject);
     }
 
@@ -427,29 +483,25 @@ public class BlockQueueManager : MonoBehaviour
     {
         List<GameObject> availableBlocks = GetCurrentAvailableBlocks();
 
-        // 1. Cek apakah tangan kosong DAN deck habis (Habis Stok)
         if (currentDeck.Count == 0 && availableBlocks.Count == 0)
         {
-            TriggerGameOver("OUT OF STOCK");
+            TriggerGameOver("OUT OF BLOCKS");
             return;
         }
 
-        // 2. Cek apakah sisa balok di tangan MASIH BISA ditaruh di papan (Board Full / Grid Stuck)
         if (placementSystem != null)
         {
             bool cannotPlaceAny = placementSystem.CheckForGameOver(availableBlocks);
             if (cannotPlaceAny)
             {
-                TriggerGameOver("NO VALID MOVES");
+                TriggerGameOver("SYSTEM OVERLOADED");
             }
         }
     }
 
     private void TriggerGameOver(string reason)
     {
-        Debug.Log($"GAME OVER! Reason: {reason}");
-        
-        if (ScoreManager.Instance != null) 
+        if (ScoreManager.Instance != null)
         {
             ScoreManager.Instance.CheckAndSaveHighScore();
         }
@@ -457,14 +509,56 @@ public class BlockQueueManager : MonoBehaviour
         if (UIManager.Instance != null)
         {
             int finalScore = ScoreManager.Instance != null ? ScoreManager.Instance.totalScore : 0;
-            // Jika UIManager barumu butuh string alasan, bisa di-passing di sini
-            UIManager.Instance.ShowGameOverPanel(finalScore); 
+            UIManager.Instance.ShowGameOverPanel(finalScore, reason);
         }
 
         if (GameStateManager.Instance != null)
         {
             GameStateManager.Instance.ChangeState(GameState.GameOver);
         }
+    }
+    private IEnumerator ShakeErrorUI(RectTransform targetUI, Vector2 originalPos)
+    {
+        float shakeDuration = 0.2f;   
+        float shakeMagnitude = 5f;   
+        float elapsed = 0f;
+
+        while (elapsed < shakeDuration)
+        {
+            elapsed += Time.deltaTime;
+            
+            float randomX = originalPos.x + Random.Range(-shakeMagnitude, shakeMagnitude);
+            
+            targetUI.anchoredPosition = new Vector2(randomX, originalPos.y);
+            
+            yield return null;
+        }
+
+        targetUI.anchoredPosition = originalPos;
+    }
+
+    private IEnumerator AnimateStockText(int targetCount)
+    {
+        float duration = 0.35f; 
+        float elapsed = 0f;
+        int startCount = displayedStockCount;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+    
+            displayedStockCount = Mathf.RoundToInt(Mathf.Lerp(startCount, targetCount, t));
+            
+            totalStockText.text = displayedStockCount.ToString();
+            totalStockText.color = displayedStockCount == 0 ? Color.red : Color.white;
+            
+            yield return null;
+        }
+
+        displayedStockCount = targetCount;
+        totalStockText.text = displayedStockCount.ToString();
+        totalStockText.color = displayedStockCount == 0 ? Color.red : Color.white;
     }
 
     public List<GameObject> GetCurrentAvailableBlocks()
@@ -479,10 +573,10 @@ public class BlockQueueManager : MonoBehaviour
 
     public void ShuffleDeck()
     {
-        if (currentDeck.Count <= 1) return; 
+        if (currentDeck.Count <= 1) return;
 
         List<GameObject> tempList = new List<GameObject>(currentDeck);
-        currentDeck.Clear(); 
+        currentDeck.Clear();
 
         int count = tempList.Count;
         for (int i = 0; i < count; i++)

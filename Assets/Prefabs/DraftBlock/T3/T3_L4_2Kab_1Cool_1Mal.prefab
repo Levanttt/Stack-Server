@@ -48,7 +48,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 578ada32be06fb84d996e2224877b95f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  blockIcon: {fileID: 0}
+  blockIcon: {fileID: 21300000, guid: d8dab4b852571a248b56816469460976, type: 3}
   localTiles:
   - position: {x: 0, y: 0}
     type: 2

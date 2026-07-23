@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
-using System.Collections; 
+using System.Collections;
 
 public class UIManager : MonoBehaviour
 {
@@ -10,65 +10,62 @@ public class UIManager : MonoBehaviour
 
     [Header("HUD Score UI")]
     public Image radialScoreFill;
-    public TextMeshProUGUI scoreValueText; 
-    public TextMeshProUGUI scoreMaxText;   
+    public TextMeshProUGUI scoreValueText;
+    public TextMeshProUGUI scoreMaxText;
 
     [Header("Score Bar UI")]
-    public UnityEngine.UI.Image scoreFill;         
-    public UnityEngine.UI.Image scorePreviewFill;
+    public Image scoreFill;
+    public Image scorePreviewFill;
 
-    [Header("Ghost Bar Colors (Atur di Sini!)")]
-    public Color positivePreviewColor = new Color(0f, 1f, 0f, 0.6f); 
-    public Color negativePreviewColor = new Color(1f, 0f, 0f, 1f);   
+    [Header("Ghost Bar Colors")]
+    public Color positivePreviewColor = new Color(0f, 1f, 0f, 0.6f);
+    public Color negativePreviewColor = new Color(1f, 0f, 0f, 1f);
 
     [Header("Dynamic Font Scaling")]
     public float valueBaseSize = 32f;
     public float maxBaseSize = 28f;
-    public int safeCharacterLimit = 4;      
-    public float sizeReductionPerChar = 2f;  
-    
+    public int safeCharacterLimit = 4;
+    public float sizeReductionPerChar = 2f;
+
     [Header("Animation Settings")]
     public float fillAnimationSpeed = 5f;
-    public float barSmoothTime = 0.15f; 
-    public Color milestoneFlashColor = new Color(0.4f, 0.95f, 1f, 1f); 
-    public Color negativeScoreColor = Color.red; 
+    public float barSmoothTime = 0.15f;
+    public Color milestoneFlashColor = new Color(0.4f, 0.95f, 1f, 1f);
+    public Color negativeScoreColor = Color.red;
 
-    [Header("Game Over - Parent & Dimmer")]
+    [Header("Game Over - Base Panels")]
     public GameObject gameOverPanel;
-    public CanvasGroup bgDimmer; 
+    public CanvasGroup bgDimmer;
+    public CanvasGroup stripeBanner;
+    public RectTransform mainBoard;
 
-    [Header("Game Over - Phase 1 (Stripe Banner)")]
-    public CanvasGroup stripeBanner; 
+    [Header("Game Over - Sliding Rows")]
+    public RectTransform textReasonRect;
+    public RectTransform finalScoreRowRect;
+    public RectTransform highScoreRowRect;
     
-    [Header("Game Over - Phase 2 (Main Board)")]
-    public RectTransform mainBoard; 
-    public TextMeshProUGUI reasonText; 
+    [Header("Game Over - Texts & Stamp")]
+    public TextMeshProUGUI reasonText;
     public TextMeshProUGUI finalScoreText;
     public TextMeshProUGUI highScoreText;
-    
-    [Header("Game Over - Phase 3 (New Record Stamp)")]
     public GameObject newRecordStamp;
-    public RectTransform newRecordTransform; 
-    
+    public RectTransform newRecordTransform;
+
     [Header("Game Over - Buttons")]
-    public GameObject buttonsGroup; 
+    public CanvasGroup buttonsGroupCanvas;
 
-    private float actualTargetFill = 0f; 
-    private float mainTargetFill = 0f;   
-    private float ghostTargetFill = 0f;  
-
+    private float actualTargetFill = 0f;
+    private float mainTargetFill = 0f;
+    private float ghostTargetFill = 0f;
     private int lastMilestoneScore = 0;
     private bool isWrappingAround = false;
-    private bool isPreviewing = false; 
-
+    private bool isPreviewing = false;
     private float radialVelocity = 0f;
     private float linearVelocity = 0f;
     private float ghostVelocity = 0f;
-
     private int displayedScore = 0;
     private int targetScoreValue = 0;
     private Coroutine scoreLerpCoroutine;
-
     private Vector3 originalTextScale;
     private Vector3 originalMaxTextScale;
     private Color originalFillColor;
@@ -83,19 +80,19 @@ public class UIManager : MonoBehaviour
 
     private void Start()
     {
-        if (scoreValueText != null) 
+        if (scoreValueText != null)
         {
             originalTextScale = scoreValueText.transform.localScale;
             scoreValueText.fontSize = valueBaseSize;
-            originalTextColor = scoreValueText.color; 
+            originalTextColor = scoreValueText.color;
         }
-        if (scoreMaxText != null) 
+        if (scoreMaxText != null)
         {
             originalMaxTextScale = scoreMaxText.transform.localScale;
             scoreMaxText.fontSize = maxBaseSize;
         }
         if (radialScoreFill != null) originalFillColor = radialScoreFill.color;
-        
+
         HideScorePreview();
 
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
@@ -123,7 +120,7 @@ public class UIManager : MonoBehaviour
             }
             else linearDone = true;
 
-            if (radialDone && linearDone) 
+            if (radialDone && linearDone)
             {
                 isWrappingAround = false;
                 if (scoreFill != null) scoreFill.fillAmount = 0f;
@@ -136,7 +133,7 @@ public class UIManager : MonoBehaviour
         {
             if (radialScoreFill != null)
                 radialScoreFill.fillAmount = Mathf.SmoothDamp(radialScoreFill.fillAmount, mainTargetFill, ref radialVelocity, barSmoothTime);
-            
+
             if (scoreFill != null)
                 scoreFill.fillAmount = Mathf.SmoothDamp(scoreFill.fillAmount, mainTargetFill, ref linearVelocity, barSmoothTime);
 
@@ -151,14 +148,11 @@ public class UIManager : MonoBehaviour
     {
         bool isNegative = score < 0;
         int absScore = Mathf.Abs(score);
-
         string result = "";
-        if (absScore >= 1000000)
-            result = (absScore / 1000000f).ToString("0.#") + "M"; 
-        else if (absScore >= 10000)
-            result = (absScore / 1000f).ToString("0.#") + "K";    
-        else 
-            result = absScore.ToString(); 
+        
+        if (absScore >= 1000000) result = (absScore / 1000000f).ToString("0.#") + "M";
+        else if (absScore >= 10000) result = (absScore / 1000f).ToString("0.#") + "K";
+        else result = absScore.ToString();
 
         return isNegative ? "-" + result : result;
     }
@@ -181,12 +175,11 @@ public class UIManager : MonoBehaviour
                 if (celebrationCoroutine != null) StopCoroutine(celebrationCoroutine);
                 celebrationCoroutine = StartCoroutine(CelebrateMilestoneRoutine());
             }
-            
+
             lastMilestoneScore = targetMilestoneScore;
-            
             actualTargetFill = Mathf.Clamp01((float)Mathf.Max(0, currentScore) / targetMilestoneScore);
-            
-            if (!isPreviewing) 
+
+            if (!isPreviewing)
             {
                 mainTargetFill = actualTargetFill;
             }
@@ -203,7 +196,7 @@ public class UIManager : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
-            
+
             displayedScore = Mathf.RoundToInt(Mathf.Lerp(startScore, endScore, t));
             UpdateTextVisuals(displayedScore, targetMilestoneScore);
             yield return null;
@@ -218,24 +211,24 @@ public class UIManager : MonoBehaviour
         string formattedCurrent = FormatScore(currentDisplayScore);
         string formattedTarget = FormatScore(targetMilestoneScore);
 
-        if (scoreValueText != null) 
+        if (scoreValueText != null)
         {
             scoreValueText.text = formattedCurrent;
-            scoreValueText.color = currentDisplayScore < 0 ? negativeScoreColor : originalTextColor; 
+            scoreValueText.color = currentDisplayScore < 0 ? negativeScoreColor : originalTextColor;
         }
 
         int maxCharLength = Mathf.Max(formattedCurrent.Length, formattedTarget.Length);
         int reductionSteps = Mathf.Max(0, maxCharLength - safeCharacterLimit);
 
-        if (scoreValueText != null) 
+        if (scoreValueText != null)
             scoreValueText.fontSize = valueBaseSize - (reductionSteps * sizeReductionPerChar);
-        if (scoreMaxText != null) 
+        if (scoreMaxText != null)
             scoreMaxText.fontSize = maxBaseSize - (reductionSteps * sizeReductionPerChar);
     }
 
     private IEnumerator CelebrateMilestoneRoutine()
     {
-        float duration = 0.4f; 
+        float duration = 0.4f;
         float elapsed = 0f;
 
         if (radialScoreFill != null) radialScoreFill.color = milestoneFlashColor;
@@ -244,10 +237,9 @@ public class UIManager : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
-
             float bounceEffect = Mathf.Sin(t * Mathf.PI);
-            float currentScale = 1f + (bounceEffect * 0.5f); 
-            
+            float currentScale = 1f + (bounceEffect * 0.5f);
+
             if (scoreValueText != null) scoreValueText.transform.localScale = originalTextScale * currentScale;
             if (scoreMaxText != null) scoreMaxText.transform.localScale = originalMaxTextScale * currentScale;
             if (radialScoreFill != null) radialScoreFill.color = Color.Lerp(milestoneFlashColor, originalFillColor, t);
@@ -264,7 +256,7 @@ public class UIManager : MonoBehaviour
     {
         if (targetScore <= 0) targetScore = 1;
 
-        isPreviewing = true; 
+        isPreviewing = true;
         if (scorePreviewFill != null && !scorePreviewFill.gameObject.activeSelf)
         {
             scorePreviewFill.gameObject.SetActive(true);
@@ -279,19 +271,17 @@ public class UIManager : MonoBehaviour
 
         if (estimatedScore > 0)
         {
-            mainTargetFill = currentFill;      
-            ghostTargetFill = predictedFill;    
-
+            mainTargetFill = currentFill;
+            ghostTargetFill = predictedFill;
             if (scorePreviewFill != null) scorePreviewFill.color = positivePreviewColor;
         }
         else if (estimatedScore < 0)
         {
-            mainTargetFill = predictedFill;     
-            ghostTargetFill = currentFill;     
-
-            if (scorePreviewFill != null) scorePreviewFill.color = negativePreviewColor; 
+            mainTargetFill = predictedFill;
+            ghostTargetFill = currentFill;
+            if (scorePreviewFill != null) scorePreviewFill.color = negativePreviewColor;
         }
-        else 
+        else
         {
             mainTargetFill = currentFill;
             ghostTargetFill = currentFill;
@@ -301,65 +291,57 @@ public class UIManager : MonoBehaviour
 
     public void HideScorePreview()
     {
-        isPreviewing = false; 
+        isPreviewing = false;
         if (scorePreviewFill != null) scorePreviewFill.gameObject.SetActive(false);
         mainTargetFill = actualTargetFill;
     }
 
-    // ==========================================
-    // LOGIKA GAME OVER CINEMATIC
-    // ==========================================
-    public void ShowGameOverPanel(int finalScore)
+    public void ShowGameOverPanel(int finalScore, string reasonMsg)
     {
-        StartCoroutine(GameOverSequence(finalScore, "SYSTEM OVERLOADED"));
+        StartCoroutine(GameOverSequence(finalScore, reasonMsg));
     }
 
     private IEnumerator GameOverSequence(int finalScore, string reasonMsg)
     {
-        // 1. Cek Data Highscore Melalui HighScoreManager
-        // Sistem otomatis mengevaluasi dan menyimpan rekor, lalu mengembalikan status True/False
         bool isNewRecord = false;
         int currentHighScore = 0;
 
-        // Memastikan HighScoreManager tidak Null agar aman dari error
         if (HighScoreManager.Instance != null)
         {
             isNewRecord = HighScoreManager.Instance.CheckAndSaveNewRecord(finalScore);
             currentHighScore = HighScoreManager.Instance.GetHighScore();
         }
 
-        // 2. SET UP KONDISI AWAL
         if (gameOverPanel != null) gameOverPanel.SetActive(true);
         if (bgDimmer != null) bgDimmer.alpha = 0f;
         
+        float offScreenX = -2500f;
+        
+        if (mainBoard != null) mainBoard.anchoredPosition = new Vector2(offScreenX, mainBoard.anchoredPosition.y); 
+
+        if (textReasonRect != null) textReasonRect.anchoredPosition = new Vector2(offScreenX, textReasonRect.anchoredPosition.y);
+        if (finalScoreRowRect != null) finalScoreRowRect.anchoredPosition = new Vector2(offScreenX, finalScoreRowRect.anchoredPosition.y);
+        if (highScoreRowRect != null) highScoreRowRect.anchoredPosition = new Vector2(offScreenX, highScoreRowRect.anchoredPosition.y);
+
+        if (buttonsGroupCanvas != null)
+        {
+            buttonsGroupCanvas.alpha = 0f;
+            buttonsGroupCanvas.gameObject.SetActive(true);
+        }
+
+        if (newRecordStamp != null) newRecordStamp.SetActive(false);
+        if (reasonText != null) reasonText.text = reasonMsg;
+        if (finalScoreText != null) finalScoreText.text = "0";
+        if (highScoreText != null) highScoreText.text = "0";
+
         if (stripeBanner != null)
         {
             stripeBanner.alpha = 0f;
             stripeBanner.gameObject.SetActive(true);
         }
-        
-        if (mainBoard != null)
-        {
-            // LEMPAR JAUH KE -2500 DAN MATIKAN DULU!
-            mainBoard.anchoredPosition = new Vector2(-2500f, mainBoard.anchoredPosition.y);
-            mainBoard.gameObject.SetActive(false); 
-        }
 
-        if (newRecordStamp != null) newRecordStamp.SetActive(false);
-        if (buttonsGroup != null) buttonsGroup.SetActive(false);
-
-        // Isi Teks
-        if (reasonText != null) reasonText.text = reasonMsg;
-        if (finalScoreText != null) finalScoreText.text = finalScore.ToString();
-        if (highScoreText != null) 
-        {
-            highScoreText.text = currentHighScore.ToString();
-            highScoreText.color = isNewRecord ? Color.yellow : Color.white;
-        }
-
-        // 3. PHASE 1: FADE IN STRIPE BANNER
         float elapsed = 0f;
-        float duration = 0.5f;
+        float duration = 0.25f;
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
@@ -367,52 +349,55 @@ public class UIManager : MonoBehaviour
             yield return null;
         }
 
-        // Jeda dramatis (Stripe Banner tampil sendiri)
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSeconds(0.8f); 
 
-        // 4. PHASE 2: SLIDE IN MAIN BOARD & FADE BACKGROUND
-        // BARU NYALAKAN MAIN BOARD DI SINI SEBELUM MELUNCUR
-        if (mainBoard != null) mainBoard.gameObject.SetActive(true);
-        
-        Vector2 boardStartPos = new Vector2(-2500f, mainBoard != null ? mainBoard.anchoredPosition.y : 0f);
-        Vector2 boardCenterPos = new Vector2(0f, mainBoard != null ? mainBoard.anchoredPosition.y : 0f);
-        
         elapsed = 0f;
-        duration = 0.6f;
+        duration = 0.35f;
+        Vector2 boardStartPos = new Vector2(offScreenX, mainBoard != null ? mainBoard.anchoredPosition.y : 0f);
+        Vector2 boardEndPos = new Vector2(0f, mainBoard != null ? mainBoard.anchoredPosition.y : 0f);
+
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
-            // Rumus smooth step agar luncurannya mulus
             float smoothT = 1f - Mathf.Pow(1f - t, 3f); 
-
-            if (bgDimmer != null) bgDimmer.alpha = Mathf.Lerp(0f, 0.6f, smoothT); 
-            if (stripeBanner != null) stripeBanner.alpha = Mathf.Lerp(1f, 0f, smoothT); 
-            if (mainBoard != null) mainBoard.anchoredPosition = Vector2.Lerp(boardStartPos, boardCenterPos, smoothT); 
-
+            
+            if (bgDimmer != null) bgDimmer.alpha = Mathf.Lerp(0f, 0.8f, smoothT);
+            if (mainBoard != null) mainBoard.anchoredPosition = Vector2.Lerp(boardStartPos, boardEndPos, smoothT);
+            
             yield return null;
         }
         
+        if (mainBoard != null) mainBoard.anchoredPosition = boardEndPos;
+
         if (stripeBanner != null) stripeBanner.gameObject.SetActive(false);
 
-        // Jeda sebentar sebelum tombol muncul
-        yield return new WaitForSeconds(0.3f);
-        if (buttonsGroup != null) buttonsGroup.SetActive(true);
+        yield return new WaitForSeconds(0.1f);
 
-        // 5. PHASE 3: ANIMASI "NEW RECORD!"
+        yield return StartCoroutine(SlideUI(textReasonRect, offScreenX, 0f, 0.4f));
+        yield return new WaitForSeconds(0.1f);
+
+        yield return StartCoroutine(SlideUI(finalScoreRowRect, offScreenX, 0f, 0.4f));
+        yield return StartCoroutine(RollTextNumber(finalScoreText, finalScore, 0.6f));
+        yield return new WaitForSeconds(0.15f);
+
+        yield return StartCoroutine(SlideUI(highScoreRowRect, offScreenX, 0f, 0.4f));
+        if (highScoreText != null) highScoreText.color = isNewRecord ? Color.yellow : Color.white;
+        yield return StartCoroutine(RollTextNumber(highScoreText, currentHighScore, 0.6f));
+        yield return new WaitForSeconds(0.2f);
+
         if (isNewRecord && newRecordStamp != null && newRecordTransform != null)
         {
             newRecordStamp.SetActive(true);
             newRecordTransform.localScale = Vector3.zero;
 
-            // Animasi Pop Up
             elapsed = 0f;
             duration = 0.4f;
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
                 float t = elapsed / duration;
-                float bounceT = 1f + 0.5f * Mathf.Sin(t * Mathf.PI) * (1f - t); 
+                float bounceT = 1f + 0.5f * Mathf.Sin(t * Mathf.PI) * (1f - t);
                 newRecordTransform.localScale = Vector3.one * bounceT;
                 yield return null;
             }
@@ -420,6 +405,53 @@ public class UIManager : MonoBehaviour
 
             StartCoroutine(PulseNewRecord());
         }
+
+        if (buttonsGroupCanvas != null)
+        {
+            elapsed = 0f;
+            duration = 0.4f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                buttonsGroupCanvas.alpha = Mathf.Lerp(0f, 1f, elapsed / duration);
+                yield return null;
+            }
+        }
+    }
+
+    private IEnumerator SlideUI(RectTransform target, float startX, float endX, float duration)
+    {
+        if (target == null) yield break;
+
+        float elapsed = 0f;
+        Vector2 startPos = new Vector2(startX, target.anchoredPosition.y);
+        Vector2 endPos = new Vector2(endX, target.anchoredPosition.y);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            float smoothT = 1f - Mathf.Pow(1f - t, 3f); 
+            target.anchoredPosition = Vector2.Lerp(startPos, endPos, smoothT);
+            yield return null;
+        }
+        target.anchoredPosition = endPos;
+    }
+
+    private IEnumerator RollTextNumber(TextMeshProUGUI textElement, int targetNumber, float duration)
+    {
+        if (textElement == null) yield break;
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            int currentVal = Mathf.RoundToInt(Mathf.Lerp(0, targetNumber, t));
+            textElement.text = currentVal.ToString();
+            yield return null;
+        }
+        textElement.text = targetNumber.ToString();
     }
 
     private IEnumerator PulseNewRecord()
@@ -427,38 +459,28 @@ public class UIManager : MonoBehaviour
         while (true)
         {
             float elapsed = 0f;
-            float duration = 0.8f; // Kecepatan satu siklus detak dan goyangan
-            
+            float duration = 0.8f;
+
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
                 float t = elapsed / duration;
-                
-                // 1. Animasi Skala (Kedat-kedut membesar)
-                // Menggunakan setengah gelombang Sin (0 -> 1 -> 0)
-                float scale = 1f + 0.15f * Mathf.Sin(t * Mathf.PI); 
-                
-                // 2. Animasi Rotasi Z (Miring kanan-kiri)
-                // Menggunakan gelombang penuh Sin (0 -> 1 -> 0 -> -1 -> 0) dikali kemiringan maksimal
-                float maxTiltAngle = 10f; // Ubah angka ini kalau mau miringnya lebih ekstrem (misal 15f atau 20f)
-                float zRotation = Mathf.Sin(t * Mathf.PI * 2f) * maxTiltAngle; 
-                
-                if (newRecordTransform != null) 
+
+                float scale = 1f + 0.15f * Mathf.Sin(t * Mathf.PI);
+                float maxTiltAngle = 10f;
+                float zRotation = Mathf.Sin(t * Mathf.PI * 2f) * maxTiltAngle;
+
+                if (newRecordTransform != null)
                 {
-                    // Terapkan skala
                     newRecordTransform.localScale = Vector3.one * scale;
-                    // Terapkan rotasi pada sumbu Z
-                    newRecordTransform.localEulerAngles = new Vector3(0f, 0f, zRotation); 
+                    newRecordTransform.localEulerAngles = new Vector3(0f, 0f, zRotation);
                 }
-                
+
                 yield return null;
             }
         }
     }
 
-    // ==========================================
-    // FUNGSI TOMBOL NAVIGASI
-    // ==========================================
     public void RestartGame()
     {
         Time.timeScale = 1f;
@@ -468,6 +490,6 @@ public class UIManager : MonoBehaviour
     public void ReturnToMainMenu()
     {
         Time.timeScale = 1f;
-        SceneManager.LoadScene("MainMenu"); // Sesuaikan nama scene menu utamamu
+        SceneManager.LoadScene("MainMenu");
     }
 }
