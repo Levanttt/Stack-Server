@@ -3883,14 +3883,14 @@ MonoBehaviour:
   scoreMaxText: {fileID: 1834725600}
   scoreFill: {fileID: 1326419874}
   scorePreviewFill: {fileID: 1585162704}
-  positivePreviewColor: {r: 0.37486652, g: 0.51131207, b: 0.6792453, a: 1}
+  positivePreviewColor: {r: 0.3186632, g: 0.51899487, b: 0.8773585, a: 0.29411766}
   negativePreviewColor: {r: 0.7169812, g: 0.26041296, b: 0.26041296, a: 1}
   valueBaseSize: 32
   maxBaseSize: 28
   safeCharacterLimit: 4
   sizeReductionPerChar: 4
   fillAnimationSpeed: 5
-  barSmoothTime: 0.15
+  barSmoothTime: 0.3
   milestoneFlashColor: {r: 0.02745098, g: 0.6, b: 1, a: 1}
   negativeScoreColor: {r: 1, g: 0, b: 0, a: 1}
   gameOverPanel: {fileID: 2050771120}
@@ -4222,7 +4222,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1585162702
 RectTransform:
   m_ObjectHideFlags: 0
