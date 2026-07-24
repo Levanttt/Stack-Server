@@ -26,6 +26,8 @@ public class ScoreManager : MonoBehaviour
 
     [Header("Tetris Bonus Settings")]
     public int scoreFullLineBonus = 50; 
+    [Header("Audio Settings")]
+    public SoundFX lineClearSFX;
     
     [HideInInspector] public int totalScore = 0;
     
@@ -305,6 +307,10 @@ public class ScoreManager : MonoBehaviour
                     }
                 }
             }
+        }
+        if (AudioManager.Instance != null && lineClearSFX != null)
+        {
+            AudioManager.Instance.PlaySFX(lineClearSFX);
         }
 
         float duration = 0.4f;

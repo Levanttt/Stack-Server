@@ -10,6 +10,9 @@ public class MilestoneManager : MonoBehaviour
     public int baseInfiniteStep = 1000; 
     public float infiniteStepMultiplier = 1.25f; 
 
+    [Header("Audio Settings")]
+    public SoundFX milestoneReachedSFX;
+
     public int CurrentMilestoneIndex { get; private set; } = 0;
     public int CurrentTargetMilestone { get; private set; }
     
@@ -53,6 +56,11 @@ public class MilestoneManager : MonoBehaviour
 
             Debug.Log($"[LEVEL UP] Milestone ke-{CurrentMilestoneIndex} Tercapai! Target baru: {CurrentTargetMilestone} (Step selanjutnya butuh: {currentInfiniteStep})");
             TriggerMilestoneRewards();
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX(milestoneReachedSFX);
+            }
         }
     }
 

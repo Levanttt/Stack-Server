@@ -51,6 +51,22 @@ public class UIManager : MonoBehaviour
     public GameObject newRecordStamp;
     public RectTransform newRecordTransform;
 
+    [Header("HUD Audio Settings")]
+    public SoundFX hudRollTickSFX;
+    public float hudStartPitch = 1.5f;
+    public float hudEndPitch = 0.5f;
+    public float hudTickInterval = 0.04f; 
+
+    [Header("Game Over Audio Settings")]
+    public SoundFX gameOverRollTickSFX;
+    public float gameOverStartPitch = 0.8f;
+    public float gameOverEndPitch = 1f;
+    public float gameOverTickInterval = 0.08f; 
+    public SoundFX gameOverShowSFX; 
+    public float gameOverShowStartPitch = 1.2f; 
+    public float gameOverShowEndPitch = 0.4f;   
+    public float gameOverShowPitchDuration = 1f;
+
     [Header("Game Over - Buttons")]
     public CanvasGroup buttonsGroupCanvas;
 
@@ -210,6 +226,10 @@ public class UIManager : MonoBehaviour
         float duration = 0.3f;
         float elapsed = 0f;
         int startScore = displayedScore;
+        float nextTickTime = 0f; 
+        
+        bool isMinus = endScore < startScore;
+        bool hasScoreChanged = endScore != startScore;
 
         while (elapsed < duration)
         {
@@ -218,6 +238,32 @@ public class UIManager : MonoBehaviour
 
             displayedScore = Mathf.RoundToInt(Mathf.Lerp(startScore, endScore, t));
             UpdateTextVisuals(displayedScore, targetMilestoneScore);
+
+            if (hasScoreChanged && elapsed >= nextTickTime)
+            {
+                if (AudioManager.Instance != null && hudRollTickSFX != null && hudRollTickSFX.clip != null)
+                {
+                    float currentPitch;
+                    
+                    if (isMinus)
+                    {
+                        currentPitch = Mathf.Lerp(hudEndPitch, hudStartPitch, t);
+                    }
+                    else
+                    {
+                        currentPitch = Mathf.Lerp(hudStartPitch, hudEndPitch, t);
+                    }
+                    
+                    float originalPitch = hudRollTickSFX.pitch;
+                    hudRollTickSFX.pitch = currentPitch;
+                    
+                    AudioManager.Instance.PlaySFX(hudRollTickSFX);
+                    
+                    hudRollTickSFX.pitch = originalPitch; 
+                }
+                nextTickTime = elapsed + hudTickInterval; 
+            }
+
             yield return null;
         }
 
@@ -358,6 +404,15 @@ public class UIManager : MonoBehaviour
             stripeBanner.gameObject.SetActive(true);
         }
 
+        if (AudioManager.Instance != null && gameOverShowSFX != null)
+        {
+            AudioSource bannerAudio = AudioManager.Instance.PlaySFX(gameOverShowSFX);
+            if (bannerAudio != null)
+            {
+                StartCoroutine(SlideAudioPitch(bannerAudio, gameOverShowStartPitch, gameOverShowEndPitch, gameOverShowPitchDuration));
+            }
+        }
+
         float elapsed = 0f;
         float duration = 0.25f;
         while (elapsed < duration)
@@ -461,6 +516,8 @@ public class UIManager : MonoBehaviour
         if (textElement == null) yield break;
 
         float elapsed = 0f;
+        float nextTickTime = 0f; 
+
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
@@ -468,6 +525,23 @@ public class UIManager : MonoBehaviour
             int currentVal = Mathf.RoundToInt(Mathf.Lerp(0, targetNumber, t));
             
             textElement.text = currentVal.ToString("N0"); 
+
+            if (elapsed >= nextTickTime)
+            {
+                if (AudioManager.Instance != null && gameOverRollTickSFX != null && gameOverRollTickSFX.clip != null)
+                {
+                    float currentPitch = Mathf.Lerp(gameOverStartPitch, gameOverEndPitch, t);
+                    
+                    float originalPitch = gameOverRollTickSFX.pitch;
+                    gameOverRollTickSFX.pitch = currentPitch;
+                    
+                    AudioManager.Instance.PlaySFX(gameOverRollTickSFX);
+                    
+                    gameOverRollTickSFX.pitch = originalPitch; 
+                }
+                nextTickTime = elapsed + gameOverTickInterval; 
+            }
+
             yield return null;
         }
         textElement.text = targetNumber.ToString("N0");
@@ -498,6 +572,20 @@ public class UIManager : MonoBehaviour
                 yield return null;
             }
         }
+    }
+
+    private IEnumerator SlideAudioPitch(AudioSource source, float startPitch, float endPitch, float slideDuration)
+    {
+        float timeElapsed = 0f;
+        
+        while (timeElapsed < slideDuration && source != null)
+        {
+            timeElapsed += Time.deltaTime;
+            source.pitch = Mathf.Lerp(startPitch, endPitch, timeElapsed / slideDuration);
+            yield return null;
+        }
+        
+        if (source != null) source.pitch = endPitch;
     }
 
     public void RestartGame()
