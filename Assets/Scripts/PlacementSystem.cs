@@ -16,6 +16,9 @@ public class PlacementSystem : MonoBehaviour
     public GameObject blockPrefab;
     public float cellSize = 1f;
 
+    [Header("Audio Settings")]
+    public SoundFX placeBlockSFX; 
+
     [Header("Preview Settings (Hologram)")]
     public Material validMaterial;
     public Material invalidMaterial;
@@ -178,6 +181,11 @@ public class PlacementSystem : MonoBehaviour
             if (canPlace && Input.GetMouseButtonDown(0))
             {
                 isWaitingForScore = true; 
+
+                if (AudioManager.Instance != null && placeBlockSFX != null)
+                {
+                    AudioManager.Instance.PlaySFX(placeBlockSFX);
+                }
                 
                 int finalScoreGained = scoreManager.GetEstimatedPlacementScore(baseGridPos, rotatedTiles);
                 Vector3 popUpPos = previewObject.transform.position + currentDynamicTextOffset;

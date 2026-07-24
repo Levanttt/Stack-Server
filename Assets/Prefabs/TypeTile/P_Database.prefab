@@ -149,9 +149,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetRenderer: {fileID: 477071224076833990}
+  targetMaterialIndex: 0
   overheatGlowColor: {r: 2, g: 0, b: 0, a: 1}
   blinkSpeed: 4
   overheatIcon: {fileID: 7624313758779807473}
+  overheatStartSFX:
+    clip: {fileID: 8300000, guid: fd69613676f75114e9e8bb0fbf2c8961, type: 3}
+    volume: 1
+    pitch: -1.08
+  overheatCooledSFX:
+    clip: {fileID: 8300000, guid: e3baa5a7121f9814ebcd4a03f0b2fb9d, type: 3}
+    volume: 1
+    pitch: 1.04
   isInfected: 0
   warningIcon: {fileID: 3663102846962201656}
   combinedDangerIcon: {fileID: 4848008220825901691}
