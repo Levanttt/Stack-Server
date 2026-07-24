@@ -13,13 +13,14 @@ public class PauseManager : MonoBehaviour
     public CanvasGroup bgDimmer;
     public RectTransform sidePanel;
     public TextMeshProUGUI highscoreValueText;
+    
+    public Button btnPauseTrigger; 
 
     [Header("Animation Settings")]
     public float slideDuration = 0.35f;
     public float panelOffScreenX = -400f; 
     public float dimmerMaxAlpha = 0.8f;
 
-    private bool isPaused = false;
     private Coroutine animationCoroutine;
 
     private void Awake()
@@ -30,27 +31,42 @@ public class PauseManager : MonoBehaviour
 
     private void Start()
     {
+        if (sidePanel != null) 
+        {
+            sidePanel.anchoredPosition = new Vector2(panelOffScreenX, sidePanel.anchoredPosition.y);
+        }
+        
+        if (bgDimmer != null) bgDimmer.alpha = 0f;
+        
         if (pauseCanvas != null) pauseCanvas.SetActive(false);
     }
 
     private void Update()
     {
-        // UPDATE: Diganti menjadi tombol P atau Esc
         if (Input.GetKeyDown(KeyCode.P) || Input.GetKeyDown(KeyCode.Escape))
         {
             if (GameStateManager.Instance != null && GameStateManager.Instance.currentState == GameState.GameOver) 
                 return;
 
-            if (isPaused) ResumeGame();
-            else PauseGame();
+            if (GameStateManager.Instance != null && GameStateManager.Instance.currentState == GameState.Paused) 
+                ResumeGame();
+            else 
+                PauseGame();
         }
     }
 
-    // FUNGSI INI BISA DIPANGGIL OLEH TOMBOL UI DI POJOK LAYAR
     public void PauseGame()
     {
-        isPaused = true;
-        Time.timeScale = 0f; 
+        if (GameStateManager.Instance != null)
+        {
+            GameStateManager.Instance.ChangeState(GameState.Paused);
+        }
+        else
+        {
+            Time.timeScale = 0f;
+        }
+        
+        if (btnPauseTrigger != null) btnPauseTrigger.interactable = false;
         
         if (pauseCanvas != null) pauseCanvas.SetActive(true);
         
@@ -65,9 +81,17 @@ public class PauseManager : MonoBehaviour
 
     public void ResumeGame()
     {
-        isPaused = false;
-        Time.timeScale = 1f; 
+        if (GameStateManager.Instance != null)
+        {
+            GameStateManager.Instance.ChangeState(GameState.Playing);
+        }
+        else
+        {
+            Time.timeScale = 1f;
+        }
         
+        if (btnPauseTrigger != null) btnPauseTrigger.interactable = true;
+
         if (animationCoroutine != null) StopCoroutine(animationCoroutine);
         animationCoroutine = StartCoroutine(AnimatePanel(false));
     }

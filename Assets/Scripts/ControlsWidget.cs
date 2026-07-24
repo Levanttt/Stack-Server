@@ -7,7 +7,7 @@ public class ControlsWidget : MonoBehaviour
     [Header("UI References")]
     public RectTransform contentPanel; 
     public TextMeshProUGUI buttonText; 
-    public RectTransform arrowIcon; // Referensi untuk memutar ikon panah
+    public RectTransform arrowIcon; 
 
     [Header("Text Settings")]
     public string textWhenHidden = "Show Controls";
@@ -20,6 +20,7 @@ public class ControlsWidget : MonoBehaviour
 
     private bool isOpen = false;
     private Coroutine slideCoroutine;
+    private GameState lastState;
 
     private void Start()
     {
@@ -30,13 +31,28 @@ public class ControlsWidget : MonoBehaviour
 
         if (arrowIcon != null) 
             arrowIcon.localEulerAngles = Vector3.zero; 
+            
+        if (GameStateManager.Instance != null)
+            lastState = GameStateManager.Instance.currentState;
     }
 
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Tab))
         {
-            ToggleControls();
+            if (GameStateManager.Instance != null && GameStateManager.Instance.currentState == GameState.Playing)
+            {
+                ToggleControls();
+            }
+        }
+
+        if (GameStateManager.Instance != null && GameStateManager.Instance.currentState != lastState)
+        {
+            lastState = GameStateManager.Instance.currentState;
+            if ((lastState == GameState.Paused || lastState == GameState.GameOver) && isOpen)
+            {
+                ForceClose();
+            }
         }
     }
 
@@ -47,14 +63,30 @@ public class ControlsWidget : MonoBehaviour
         if (slideCoroutine != null) StopCoroutine(slideCoroutine);
         slideCoroutine = StartCoroutine(SlidePanel(isOpen ? shownY : hiddenY));
 
-        // Ubah teks sesuai status
         if (buttonText != null) 
             buttonText.text = isOpen ? textWhenShown : textWhenHidden;
 
-        // Putar ikon panah (180 derajat di sumbu Z jika terbuka, kembali ke 0 jika tertutup)
         if (arrowIcon != null)
         {
             arrowIcon.localEulerAngles = isOpen ? new Vector3(0, 0, 180f) : Vector3.zero;
+        }
+    }
+    
+    public void ForceClose()
+    {
+        if (!isOpen) return;
+        
+        isOpen = false;
+        
+        if (slideCoroutine != null) StopCoroutine(slideCoroutine);
+        slideCoroutine = StartCoroutine(SlidePanel(hiddenY));
+
+        if (buttonText != null) 
+            buttonText.text = textWhenHidden;
+
+        if (arrowIcon != null)
+        {
+            arrowIcon.localEulerAngles = Vector3.zero;
         }
     }
 
@@ -66,7 +98,7 @@ public class ControlsWidget : MonoBehaviour
 
         while (elapsed < slideSpeed)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             float t = elapsed / slideSpeed;
             float smoothT = t * t * (3f - 2f * t); 
             

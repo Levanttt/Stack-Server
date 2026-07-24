@@ -2,63 +2,77 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
-public class CardHoverSync : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class CardHoverSync : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     [Header("Card Setup")]
     [Tooltip("Isi 0 untuk Card_1, 1 untuk Card_2, dan 2 untuk Card_3")]
     public int slotIndex; 
 
-    [Header("Child References")]
-    public Image shortcutBgImage; 
+    [Header("=== MAIN CARD VISUAL ===")]
+    public Image mainCardImage; 
+    public Sprite mainNormal;
+    public Sprite mainHover;
+    public Sprite mainSelected;
+    public Sprite mainSelectedHover; 
 
-    [Header("Sprites")]
-    public Sprite normalSprite;   
-    public Sprite hoverSprite;    
-    public Sprite selectedSprite; // Masukkan sprite saat kartu sedang terpilih (Selected) ke sini
+    [Header("=== SHORTCUT BG VISUAL ===")]
+    public Image shortcutBgImage; 
+    public Sprite shortcutNormal;   
+    public Sprite shortcutHover;    
+    public Sprite shortcutSelected; 
+    public Sprite shortcutSelectedHover; 
+
+    private bool isHovering = false;
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (shortcutBgImage == null || BlockQueueManager.Instance == null) return;
-
-        // Jangan lakukan hover jika kartu di slot ini kosong
-        if (BlockQueueManager.Instance.activeHand[slotIndex] == null) return;
-
-        // Jangan timpa dengan efek hover jika kartu ini sedang dipilih (Selected)
-        if (BlockQueueManager.Instance.currentSelectedSlot == slotIndex) return;
-
-        if (hoverSprite != null)
-            shortcutBgImage.sprite = hoverSprite;
+        isHovering = true;
+        UpdateVisual();
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        if (shortcutBgImage == null || BlockQueueManager.Instance == null) return;
+        isHovering = false;
+        UpdateVisual();
+    }
 
-        // Jangan update jika slot ini sedang kosong
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        Invoke(nameof(UpdateVisual), 0.01f);
+    }
+
+    private void UpdateVisual()
+    {
+        if (BlockQueueManager.Instance == null) return;
         if (BlockQueueManager.Instance.activeHand[slotIndex] == null) return;
 
-        // Saat mouse keluar, cek apakah kartu ini berstatus Selected
-        if (BlockQueueManager.Instance.currentSelectedSlot == slotIndex)
+        bool isSelected = (BlockQueueManager.Instance.currentSelectedSlot == slotIndex);
+
+        if (mainCardImage != null)
         {
-            // Jika ya, pertahankan warna Selected-nya!
-            if (selectedSprite != null) shortcutBgImage.sprite = selectedSprite;
+            if (isSelected)
+                mainCardImage.sprite = isHovering ? mainSelectedHover : mainSelected;
+            else
+                mainCardImage.sprite = isHovering ? mainHover : mainNormal;
         }
-        else
+
+        if (shortcutBgImage != null)
         {
-            // Jika tidak terpilih, kembalikan ke warna Normal
-            if (normalSprite != null) shortcutBgImage.sprite = normalSprite;
+            if (isSelected)
+                shortcutBgImage.sprite = isHovering ? shortcutSelectedHover : shortcutSelected;
+            else
+                shortcutBgImage.sprite = isHovering ? shortcutHover : shortcutNormal;
         }
     }
     
     private void OnDisable()
     {
-        // Reset aman saat kartu disembunyikan/direset
-        if (shortcutBgImage != null && BlockQueueManager.Instance != null)
-        {
-            if (BlockQueueManager.Instance.currentSelectedSlot == slotIndex && selectedSprite != null)
-                shortcutBgImage.sprite = selectedSprite;
-            else if (normalSprite != null)
-                shortcutBgImage.sprite = normalSprite;
-        }
+        isHovering = false;
+        
+        if (mainCardImage != null && mainNormal != null)
+            mainCardImage.sprite = mainNormal;
+
+        if (shortcutBgImage != null && shortcutNormal != null)
+            shortcutBgImage.sprite = shortcutNormal;
     }
 }

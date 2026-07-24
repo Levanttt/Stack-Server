@@ -273,7 +273,6 @@ public class BlockQueueManager : MonoBehaviour
                     }
                     else
                     {
-                        // slotImages[slotIndex].sprite = null;
                         slotImages[slotIndex].color = new Color(1f, 1f, 1f, 0f);
                     }
                 }
@@ -282,7 +281,6 @@ public class BlockQueueManager : MonoBehaviour
             {
                 if (slotImages[slotIndex] != null)
                 {
-                    // slotImages[slotIndex].sprite = null;
                     slotImages[slotIndex].color = new Color(1f, 1f, 1f, 0f);
                 }
             }
@@ -402,7 +400,6 @@ public class BlockQueueManager : MonoBehaviour
 
         if (slotImages[usedSlotIndex] != null)
         {
-            // slotImages[usedSlotIndex].sprite = null;
             slotImages[usedSlotIndex].color = new Color(1f, 1f, 1f, 0f);
         }
 
@@ -537,6 +534,7 @@ public class BlockQueueManager : MonoBehaviour
             GameStateManager.Instance.ChangeState(GameState.GameOver);
         }
     }
+    
     private IEnumerator ShakeErrorUI(RectTransform targetUI, Vector2 originalPos)
     {
         float shakeDuration = 0.2f;   
