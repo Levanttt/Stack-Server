@@ -6,35 +6,45 @@ public class TileVFX : MonoBehaviour
     [Header("Visual References")]
     public Renderer targetRenderer; 
     
+    [Tooltip("Indeks material yang akan berkedip (0 = Material 3, 1 = Glass_Unity 1)")]
+    public int targetMaterialIndex = 0; 
+    
     [Header("Overheat Settings")]
     [ColorUsage(true, true)]
     public Color overheatGlowColor = new Color(2f, 0f, 0f, 1f);
     public float blinkSpeed = 5f;
     
-    [Tooltip("Ikon sprite yang muncul saat block ini overheat (kepanasan) saja")]
     public GameObject overheatIcon; 
 
     public bool isOverheating { get; private set; } = false;
 
-    private Material[] materials;
+    private Material blinkMaterial;
+    private Color originalColor;
     private Coroutine overheatCoroutine;
 
     [Header("Infection Visuals")]
     public bool isInfected = false;
     
-    [Tooltip("Ikon sprite yang muncul saat block terinfeksi malware saja")]
     public GameObject warningIcon;
 
     [Header("Combined Danger Visuals")]
-    [Tooltip("Ikon sprite gabungan saat block terinfeksi SEKALIGUS overheat")]
     public GameObject combinedDangerIcon; 
 
     private void Awake()
     {
-        if (targetRenderer != null) 
+        if (targetRenderer != null && targetRenderer.materials.Length > targetMaterialIndex) 
         {
-            materials = targetRenderer.materials;
-            foreach (Material mat in materials) mat.EnableKeyword("_EMISSION");
+            // Hanya ambil dan modifikasi material sesuai indeks (Element 0)
+            blinkMaterial = targetRenderer.materials[targetMaterialIndex];
+            
+            blinkMaterial.EnableKeyword("_EMISSION");
+            
+            if (blinkMaterial.HasProperty("_BaseColor"))
+                originalColor = blinkMaterial.GetColor("_BaseColor");
+            else if (blinkMaterial.HasProperty("_Color"))
+                originalColor = blinkMaterial.GetColor("_Color");
+            else
+                originalColor = Color.white;
         }
 
         UpdateIconDisplay();
@@ -68,7 +78,6 @@ public class TileVFX : MonoBehaviour
         if (isInfected == state) return;
         
         isInfected = state;
-        
         UpdateIconDisplay();
     }
 
@@ -97,22 +106,33 @@ public class TileVFX : MonoBehaviour
         while (true)
         {
             float lerp = Mathf.PingPong(Time.unscaledTime * blinkSpeed, 1f);
-            Color currentGlow = Color.Lerp(Color.black, overheatGlowColor, lerp);
-            SetEmissionColor(currentGlow);
+            Color currentEmission = Color.Lerp(Color.black, overheatGlowColor, lerp);
+            
+            if (blinkMaterial != null)
+            {
+                blinkMaterial.SetColor("_EmissionColor", currentEmission);
+                
+                Color targetBaseColor = Color.Lerp(originalColor, overheatGlowColor, lerp);
+                
+                if (blinkMaterial.HasProperty("_BaseColor"))
+                    blinkMaterial.SetColor("_BaseColor", targetBaseColor);
+                else if (blinkMaterial.HasProperty("_Color"))
+                    blinkMaterial.SetColor("_Color", targetBaseColor);
+            }
             yield return null;
-        }
-    }
-
-    private void SetEmissionColor(Color color)
-    {
-        if (materials != null)
-        {
-            foreach (Material mat in materials) mat.SetColor("_EmissionColor", color);
         }
     }
 
     private void ResetGlow()
     {
-        SetEmissionColor(Color.black);
+        if (blinkMaterial != null)
+        {
+            blinkMaterial.SetColor("_EmissionColor", Color.black);
+            
+            if (blinkMaterial.HasProperty("_BaseColor"))
+                blinkMaterial.SetColor("_BaseColor", originalColor);
+            else if (blinkMaterial.HasProperty("_Color"))
+                blinkMaterial.SetColor("_Color", originalColor);
+        }
     }
 }
