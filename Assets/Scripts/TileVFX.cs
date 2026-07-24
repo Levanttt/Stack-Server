@@ -96,7 +96,7 @@ public class TileVFX : MonoBehaviour
     {
         while (true)
         {
-            float lerp = Mathf.PingPong(Time.time * blinkSpeed, 1f);
+            float lerp = Mathf.PingPong(Time.unscaledTime * blinkSpeed, 1f);
             Color currentGlow = Color.Lerp(Color.black, overheatGlowColor, lerp);
             SetEmissionColor(currentGlow);
             yield return null;
