@@ -155,7 +155,14 @@ public class PlacementSystem : MonoBehaviour
                         
                         if (Camera.main != null) staticPreviewText.transform.rotation = Camera.main.transform.rotation;
                         
-                        if (estimatedScore > 0) { staticPreviewText.text = $"+{estimatedScore}"; staticPreviewText.color = textPositiveColor; }
+                        if (estimatedScore > 0) 
+                        { 
+                            staticPreviewText.text = $"+{estimatedScore}"; 
+                            if (scoreManager != null && estimatedScore >= scoreManager.scoreFullLineBonus)
+                                staticPreviewText.color = new Color(1f, 0.84f, 0f, 1f);
+                            else
+                                staticPreviewText.color = textPositiveColor; 
+                        }
                         else if (estimatedScore < 0) { staticPreviewText.text = $"{estimatedScore}"; staticPreviewText.color = textNegativeColor; }
                         else { staticPreviewText.text = "0"; staticPreviewText.color = textNeutralColor; }
                     }

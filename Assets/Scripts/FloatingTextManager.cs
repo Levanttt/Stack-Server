@@ -27,28 +27,32 @@ public class FloatingTextManager : MonoBehaviour
 
     public void SpawnPreviewScore(Vector3 position, int estimatedScore)
     {
-        GameObject textObj = null;
-
-        if (textPool.Count > 0)
-        {
-            textObj = textPool.Dequeue();
-        }
-        else
-        {
-            textObj = Instantiate(floatingTextPrefab, transform);
-        }
-
-        textObj.transform.position = position;
-        textObj.SetActive(true);
-
+        GameObject textObj = GetFromPool(position, Quaternion.identity);
         FloatingText ft = textObj.GetComponent<FloatingText>();
         if (ft != null)
         {
-            ft.Setup(estimatedScore);
+            if (ScoreManager.Instance != null && estimatedScore >= ScoreManager.Instance.scoreFullLineBonus)
+            {
+                ft.SetupCustomText($"+{estimatedScore}", new Color(1f, 0.84f, 0f, 1f));
+            }
+            else
+            {
+                ft.Setup(estimatedScore);
+            }
         }
     }
 
     public void SpawnFinalScore(Vector3 position, int score, RectTransform targetUI, Action onArrive = null)
+    {
+        GameObject textObj = GetFromPool(position, Quaternion.identity);
+        FloatingText ft = textObj.GetComponent<FloatingText>();
+        if (ft != null)
+        {
+            ft.Setup(score, targetUI, onArrive);
+        }
+    }
+
+    public GameObject GetFromPool(Vector3 position, Quaternion rotation)
     {
         GameObject textObj = null;
 
@@ -62,13 +66,10 @@ public class FloatingTextManager : MonoBehaviour
         }
 
         textObj.transform.position = position;
+        textObj.transform.rotation = rotation;
         textObj.SetActive(true);
 
-        FloatingText ft = textObj.GetComponent<FloatingText>();
-        if (ft != null)
-        {
-            ft.Setup(score, targetUI, onArrive);
-        }
+        return textObj;
     }
 
     public void ReturnToPool(GameObject textObj)
