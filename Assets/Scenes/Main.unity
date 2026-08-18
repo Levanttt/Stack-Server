@@ -1926,7 +1926,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2233465479596085146, guid: ee6884074294bec41beec38ff4a43881, type: 2}
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -7658,17 +7658,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gridManager: {fileID: 734200713}
   clusterManager: {fileID: 2064101059}
-  scoreDatabaseSingle: 5
-  scoreDatabaseAdjacency: 15
+  scoreDatabaseSingle: 10
+  scoreDatabaseAdjacency: 25
   scoreACPlacement: 5
   scoreFirewallPlacement: 20
-  scoreNeutralizedMalware: 50
+  scoreNeutralizedMalware: 150
   scorePerDatabaseAdjacent: 10
   scorePerCableAdjacent: 5
   baseScorePerDatabaseInCluster: 20
   acCoolingRadius: 2
   penaltyOverheat: 50
-  scoreFullLineBonus: 1000
+  scoreFullLineBonus: 300
   lineClearSFX:
     clip: {fileID: 8300000, guid: 2502049d252f0e846bfa6488877ebfb5, type: 3}
     volume: 0.6
@@ -10332,20 +10332,20 @@ MonoBehaviour:
     blockPrefabs:
     - {fileID: 1376902680588011853, guid: 0bcc0cf0ba717b8488a496d14f19b495, type: 3}
     - {fileID: 1391990568717930652, guid: a54e97e0566f0904d9c12ce7d9d4c074, type: 3}
-  - unlockAtMilestoneLevel: 4
-    blockPrefabs:
-    - {fileID: 984611409674777683, guid: 6c9f281807da8cd4e9f53867283775c4, type: 3}
-    - {fileID: 1784623558766370340, guid: 2db785bf8c715054882b7338a931bdf8, type: 3}
-    - {fileID: 5557085771581086403, guid: 0ac693906b75ec949b0a4ab7c4949a8d, type: 3}
   - unlockAtMilestoneLevel: 5
-    blockPrefabs:
-    - {fileID: 2691576003490591255, guid: 1f43e8019e0e6634d812aef809b86d87, type: 3}
-    - {fileID: 9061752124628261919, guid: cf4ab7e56645607429483af99cfa2a04, type: 3}
-  - unlockAtMilestoneLevel: 7
     blockPrefabs:
     - {fileID: 9089230910911309571, guid: 49d46228162b91b4386d72b9d43ba526, type: 3}
     - {fileID: 5310130343297212643, guid: 8457fa0ddd6bdc94aa349772993a07c0, type: 3}
   - unlockAtMilestoneLevel: 7
+    blockPrefabs:
+    - {fileID: 2691576003490591255, guid: 1f43e8019e0e6634d812aef809b86d87, type: 3}
+    - {fileID: 9061752124628261919, guid: cf4ab7e56645607429483af99cfa2a04, type: 3}
+  - unlockAtMilestoneLevel: 10
+    blockPrefabs:
+    - {fileID: 984611409674777683, guid: 6c9f281807da8cd4e9f53867283775c4, type: 3}
+    - {fileID: 1784623558766370340, guid: 2db785bf8c715054882b7338a931bdf8, type: 3}
+    - {fileID: 5557085771581086403, guid: 0ac693906b75ec949b0a4ab7c4949a8d, type: 3}
+  - unlockAtMilestoneLevel: 13
     blockPrefabs:
     - {fileID: 5992857893466628123, guid: fc6e1e939d470424a8a0d425a2ae0c31, type: 3}
     - {fileID: 3422012001428986367, guid: c245160a1d4d8f547afb04ff9392c17d, type: 3}
@@ -10402,9 +10402,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 681bcea8bb9c92d4d80588b0b49bfff4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  milestoneTiers: 64000000fa000000260200001a0400000e060000d0070000
-  baseInfiniteStep: 1000
-  infiniteStepMultiplier: 1.25
+  milestoneTiers: 640000002c010000bc020000dc050000c4090000a00f000070170000
+  baseInfiniteStep: 2500
+  infiniteStepMultiplier: 1.11
   milestoneReachedSFX:
     clip: {fileID: 8300000, guid: 438853bbaeadab04fb5df0be852d710b, type: 3}
     volume: 0.3

@@ -61,8 +61,8 @@ public class ScoreManager : MonoBehaviour
         {
             Vector2Int pos = kvp.Key;
             TileData tile = kvp.Value;
-
             bool isOverheating = false;
+
             if (tile.tileObject != null)
             {
                 TileVFX vfx = tile.tileObject.GetComponentInChildren<TileVFX>();
@@ -145,7 +145,7 @@ public class ScoreManager : MonoBehaviour
                 {
                     claimedLines.Add(lineKey); 
                     permanentBonusScore += scoreFullLineBonus; 
-                    StartCoroutine(PlayLineClearVFX(true, y)); 
+                    StartCoroutine(PlayLineClearVFX(true, y, scoreFullLineBonus)); 
                 }
             }
         }
@@ -169,7 +169,7 @@ public class ScoreManager : MonoBehaviour
                 {
                     claimedLines.Add(lineKey);
                     permanentBonusScore += scoreFullLineBonus;
-                    StartCoroutine(PlayLineClearVFX(false, x));
+                    StartCoroutine(PlayLineClearVFX(false, x, scoreFullLineBonus));
                 }
             }
         }
@@ -177,8 +177,6 @@ public class ScoreManager : MonoBehaviour
         totalScore = localPlacementScore + permanentBonusScore;
 
         if (MilestoneManager.Instance != null) MilestoneManager.Instance.CheckMilestone(totalScore);
-
-        Debug.Log($"[SCORE] Dasar & Kabel Lokal: {localPlacementScore} | Tetris Bonus: {permanentBonusScore} | TOTAL: {totalScore}");
     }
 
     public void UpdateOverheatStatus()
@@ -271,7 +269,7 @@ public class ScoreManager : MonoBehaviour
         }
     }
 
-    private IEnumerator PlayLineClearVFX(bool isRow, int lineIndex)
+    private IEnumerator PlayLineClearVFX(bool isRow, int lineIndex, int bonusScore)
     {
         List<Transform> tilesInLine = new List<Transform>();
         Dictionary<Transform, Vector3> originalScales = new Dictionary<Transform, Vector3>();
@@ -308,6 +306,7 @@ public class ScoreManager : MonoBehaviour
                 }
             }
         }
+
         if (AudioManager.Instance != null && lineClearSFX != null)
         {
             AudioManager.Instance.PlaySFX(lineClearSFX);
